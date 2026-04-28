@@ -1,0 +1,16 @@
+# secrets / env
+app/.env
+.env
+
+# local postgres (workspace-owned cluster)
+.pgdata/
+.pgrun/
+*.log
+
+# python
+.venv/
+__pycache__/
+*.pyc
+
+# editor
+.vscode/
