@@ -12,7 +12,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-bank-dark border-b border-white/10">
+    <nav className="bg-bank-primary border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link
           to={user ? '/dashboard' : '/'}
@@ -58,7 +58,7 @@ export default function Navbar() {
             </Link>
             <Link
               to="/register"
-              className="bg-bank-accent hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              className="bg-bank-accent hover:bg-green-400 text-black text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               Get started
             </Link>

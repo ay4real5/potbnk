@@ -8,9 +8,10 @@ export default {
     extend: {
       colors: {
         bank: {
-          dark: '#0f172a',
-          primary: '#1e40af',
-          accent: '#3b82f6',
+          dark: '#0b3d2e',
+          primary: '#0f5132',
+          accent: '#22c55e',
+          light: '#e6f4ea',
         }
       }
     },
