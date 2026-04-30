@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     # App
     app_name: str = "Hunch Banking"
     debug: bool = False
+    auto_create_tables: bool = False
 
     # Supabase
     supabase_url: str | None = None

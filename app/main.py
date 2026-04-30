@@ -17,9 +17,12 @@ logger = logging.getLogger("hunch.main")
 
 cfg = get_settings()
 
-logger.info("Initializing database tables...")
-Base.metadata.create_all(bind=engine)
-logger.info("Database tables ready.")
+if cfg.auto_create_tables:
+    logger.info("Initializing database tables...")
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables ready.")
+else:
+    logger.info("AUTO_CREATE_TABLES disabled; skipping startup table creation.")
 
 app = FastAPI(
     title="Hunch Banking API",
