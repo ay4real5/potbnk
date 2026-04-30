@@ -17,7 +17,11 @@ _schema_ready = False
 
 @lru_cache
 def get_engine():
-    return create_engine(get_settings().database_url)
+    database_url = get_settings().database_url
+    if database_url.startswith(("postgres://", "postgresql://")) and "sslmode=" not in database_url:
+        separator = "&" if "?" in database_url else "?"
+        database_url = f"{database_url}{separator}sslmode=require"
+    return create_engine(database_url)
 
 
 def ensure_schema():
