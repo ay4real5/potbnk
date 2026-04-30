@@ -2,7 +2,7 @@ import logging
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.database import engine, Base
+from app.core.database import Base, get_engine
 from app.core.config import get_settings
 from app.models import models
 from app.api.routes import auth, accounts, supabase
@@ -19,7 +19,7 @@ cfg = get_settings()
 
 if cfg.auto_create_tables:
     logger.info("Initializing database tables...")
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=get_engine())
     logger.info("Database tables ready.")
 else:
     logger.info("AUTO_CREATE_TABLES disabled; skipping startup table creation.")
