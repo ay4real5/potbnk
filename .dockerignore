@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+
+# Local DB / runtime
+.pgdata/
+.pgrun/
+*.log
+app/.env
+.env
+
+# Test artefacts
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Frontend build outputs (built inside container)
+frontend/node_modules/
+frontend/dist/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store

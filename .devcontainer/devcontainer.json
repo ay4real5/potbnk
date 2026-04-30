@@ -1,0 +1,25 @@
+{
+  "name": "ProBank-Systems",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "features": {
+    "ghcr.io/itsmechlark/features/postgresql:1": {},
+    "ghcr.io/devcontainers/features/node:1": { "version": "18" }
+  },
+  "forwardPorts": [8000, 3000, 5432],
+  "postCreateCommand": "python -m venv .venv && .venv/bin/pip install fastapi uvicorn sqlalchemy psycopg2-binary python-jose[cryptography] passlib[bcrypt] 'bcrypt<4.1' python-dotenv pydantic[email] python-multipart && psql -U postgres -c 'CREATE DATABASE bankapp;' || true",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  },
+  "remoteEnv": {
+    "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/bankapp",
+    "SECRET_KEY": "BANK_SECRET_ALPHA_99",
+    "ALGORITHM": "HS256"
+  }
+}

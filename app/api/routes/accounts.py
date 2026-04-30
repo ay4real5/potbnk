@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from app.core.database import get_db
 from app.core.ledger import perform_transfer, perform_deposit, perform_withdrawal
 from app.api.routes.auth import get_current_user
@@ -10,12 +11,112 @@ from app.schemas.accounts import (
     TransactionResponse,
     TransferRequest,
     DepositRequest,
-    WithdrawRequest
+    WithdrawRequest,
+    OpenAccountRequest,
 )
-from typing import List
+from typing import List, Optional
 from decimal import Decimal
+import uuid
+import secrets
 
 router = APIRouter(prefix="/accounts", tags=["Accounts & Ledger"])
+
+
+def _generate_account_number() -> str:
+    return f"PRO-{secrets.randbelow(9000000000) + 1000000000}"
+
+@router.get("/lookup")
+def lookup_account(
+    account_number: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Look up an account by account number (for transfer recipient resolution)."""
+    account = db.query(Account).filter(Account.account_number == account_number).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="No account found with that account number.")
+    # Return just enough info for the sender to confirm the right recipient
+    return {
+        "id": str(account.id),
+        "account_number": account.account_number,
+        "account_type": account.account_type,
+        "holder_name": account.user.full_name,
+    }
+
+
+@router.post("/open", status_code=201)
+def open_account(
+    payload: OpenAccountRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Open a new bank account for the authenticated user (max 5 total)."""
+    existing_count = db.query(Account).filter(Account.user_id == current_user.id).count()
+    if existing_count >= 5:
+        raise HTTPException(status_code=400, detail="You may not have more than 5 accounts.")
+
+    for _ in range(10):
+        account_number = _generate_account_number()
+        account = Account(
+            id=uuid.uuid4(),
+            user_id=current_user.id,
+            account_number=account_number,
+            account_type=payload.account_type,
+            balance=0.00,
+        )
+        db.add(account)
+        try:
+            db.commit()
+            db.refresh(account)
+            return {
+                "status": "success",
+                "message": f"Your new {payload.account_type.replace('_', ' ').title()} account has been opened.",
+                "account_id": str(account.id),
+                "account_number": account.account_number,
+                "account_type": account.account_type,
+            }
+        except IntegrityError:
+            db.rollback()
+
+    raise HTTPException(status_code=500, detail="Failed to generate a unique account number. Please try again.")
+
+
+@router.get("/transactions", response_model=List[TransactionResponse])
+def get_all_transactions(
+    limit: int = 100,
+    offset: int = 0,
+    tx_type: Optional[str] = Query(None, description="Filter by type: DEPOSIT, WITHDRAWAL, TRANSFER"),
+    q: Optional[str] = Query(None, description="Search description (case-insensitive)"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all transactions across every account owned by the current user."""
+    account_ids = [
+        row.id for row in db.query(Account.id).filter(Account.user_id == current_user.id).all()
+    ]
+    if not account_ids:
+        return []
+    query = (
+        db.query(Transaction)
+        .filter(
+            or_(
+                Transaction.sender_id.in_(account_ids),
+                Transaction.receiver_id.in_(account_ids),
+            )
+        )
+    )
+    if tx_type:
+        query = query.filter(Transaction.type == tx_type.upper())
+    if q:
+        query = query.filter(Transaction.description.ilike(f"%{q}%"))
+    transactions = (
+        query
+        .order_by(Transaction.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return transactions
 
 @router.get("/", response_model=List[AccountResponse])
 def get_my_accounts(
@@ -50,8 +151,10 @@ def get_balance(
 @router.get("/{account_id}/transactions", response_model=List[TransactionResponse])
 def get_transactions(
     account_id: str,
-    limit: int = 50,
+    limit: int = 100,
     offset: int = 0,
+    tx_type: Optional[str] = Query(None, description="Filter by type: DEPOSIT, WITHDRAWAL, TRANSFER"),
+    q: Optional[str] = Query(None, description="Search description (case-insensitive)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -64,7 +167,7 @@ def get_transactions(
     if not account:
         raise HTTPException(status_code=404, detail="Account not found.")
 
-    transactions = (
+    query = (
         db.query(Transaction)
         .filter(
             or_(
@@ -72,12 +175,18 @@ def get_transactions(
                 Transaction.receiver_id == account.id
             )
         )
+    )
+    if tx_type:
+        query = query.filter(Transaction.type == tx_type.upper())
+    if q:
+        query = query.filter(Transaction.description.ilike(f"%{q}%"))
+    transactions = (
+        query
         .order_by(Transaction.created_at.desc())
         .offset(offset)
         .limit(limit)
         .all()
     )
-
     return transactions
 
 @router.post("/deposit")

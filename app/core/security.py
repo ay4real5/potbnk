@@ -1,25 +1,23 @@
-import os
-import sys
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY:
-    sys.exit("FATAL: SECRET_KEY environment variable is not set. Refusing to start.")
+from app.core.config import get_settings
 
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+_cfg = get_settings()
+SECRET_KEY = _cfg.secret_key
+ALGORITHM = _cfg.algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = _cfg.access_token_expire_minutes
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
+
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()

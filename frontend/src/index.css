@@ -1,3 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-white text-bank-dark;
+  }
+}
+
+@layer components {
+  /* Huntington-style outlined inputs */
+  .hnt-input {
+    @apply w-full border border-bank-dark rounded-md px-4 py-3 text-bank-dark placeholder-gray-400
+           focus:outline-none focus:ring-2 focus:ring-bank-accent focus:border-bank-accent
+           transition-colors bg-white text-sm;
+  }
+  /* Huntington-style primary button (dark green) */
+  .hnt-btn-primary {
+    @apply bg-bank-dark text-white font-semibold px-6 py-3 rounded-md
+           hover:bg-bank-mid transition-colors focus:outline-none
+           focus:ring-2 focus:ring-bank-accent focus:ring-offset-2 text-sm;
+  }
+  /* Huntington-style teal/outline button */
+  .hnt-btn-outline {
+    @apply border-2 border-bank-dark text-bank-dark font-semibold px-6 py-3 rounded-md
+           hover:bg-bank-dark hover:text-white transition-colors text-sm;
+  }
+}
+
+/* ── Hero animated gradient blobs ── */
+@keyframes hero-blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(40px, -60px) scale(1.1); }
+  66%       { transform: translate(-30px, 40px) scale(0.93); }
+}
+@keyframes hero-blob-alt {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-50px, 30px) scale(1.08); }
+  66%       { transform: translate(35px, -45px) scale(0.96); }
+}
+@keyframes hero-blob-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(20px, -30px) scale(1.05); }
+}
+.hero-blob-1 { animation: hero-blob     10s ease-in-out infinite; }
+.hero-blob-2 { animation: hero-blob-alt 14s ease-in-out infinite; }
+.hero-blob-3 { animation: hero-blob-slow 18s ease-in-out infinite; }

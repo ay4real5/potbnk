@@ -1,11 +1,15 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Column, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
+
+
+def _utcnow():
+    return datetime.now(timezone.utc)
 
 
 class User(Base):
@@ -15,7 +19,7 @@ class User(Base):
 	full_name = Column(String(255), nullable=False)
 	email = Column(String(255), unique=True, nullable=False, index=True)
 	hashed_password = Column(String(255), nullable=False)
-	created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
 	accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
 
@@ -28,7 +32,7 @@ class Account(Base):
 	account_number = Column(String(20), unique=True, nullable=False, index=True)
 	account_type = Column(String(20), nullable=False)
 	balance = Column(Numeric(12, 2), default=0.00, nullable=False)
-	created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
 	user = relationship("User", back_populates="accounts")
 	sent_transactions = relationship("Transaction", foreign_keys="Transaction.sender_id", back_populates="sender_account")
@@ -44,7 +48,7 @@ class Transaction(Base):
 	amount = Column(Numeric(12, 2), nullable=False)
 	type = Column(String(20), nullable=False)
 	description = Column(Text, nullable=True)
-	created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
 	sender_account = relationship("Account", foreign_keys=[sender_id], back_populates="sent_transactions")
 	receiver_account = relationship("Account", foreign_keys=[receiver_id], back_populates="received_transactions")
