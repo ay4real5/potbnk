@@ -1,4 +1,4 @@
-import sys
+import logging
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://postgres:postgres@localhost:5433/bankapp"
 
     # JWT
-    secret_key: str
+    secret_key: str = "change-me-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
@@ -37,7 +37,11 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if not self.secret_key:
-            sys.exit("FATAL: SECRET_KEY is not set. Refusing to start.")
+            self.secret_key = "change-me-in-production"
+        if self.secret_key == "change-me-in-production":
+            logging.getLogger("hunch.config").warning(
+                "SECRET_KEY is using fallback value. Set SECRET_KEY in environment variables."
+            )
 
 
 @lru_cache
