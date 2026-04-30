@@ -1,4 +1,5 @@
 import logging
+import os
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +17,30 @@ logging.basicConfig(
 logger = logging.getLogger("hunch.main")
 
 cfg = get_settings()
+
+
+def _runtime_info():
+    return {
+        "service": "hunch-banking-api",
+        "api_version": "1.0.0",
+        "vercel_env": os.getenv("VERCEL_ENV", "local"),
+        "vercel_region": os.getenv("VERCEL_REGION", "unknown"),
+        "git_commit": os.getenv("VERCEL_GIT_COMMIT_SHA", "unknown"),
+        "git_ref": os.getenv("VERCEL_GIT_COMMIT_REF", "unknown"),
+    }
+
+
+logger.info(
+    "Startup diagnostics: %s",
+    {
+        **_runtime_info(),
+        "debug": cfg.debug,
+        "db_configured": bool(cfg.database_url),
+        "supabase_url_configured": bool(cfg.supabase_url),
+        "supabase_publishable_key_configured": bool(cfg.supabase_publishable_key),
+        "supabase_service_role_key_configured": bool(cfg.supabase_service_role_key),
+    },
+)
 
 if cfg.auto_create_tables:
     logger.info("Initializing database tables...")
@@ -92,3 +117,11 @@ def system_status():
 @app.get("/health", tags=["System"])
 def health():
     return {"status": "healthy"}
+
+
+@app.get("/version", tags=["System"])
+def version():
+    return {
+        **_runtime_info(),
+        "status": "ok",
+    }
