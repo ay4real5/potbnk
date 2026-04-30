@@ -52,7 +52,7 @@ def generate_account_number():
     return f"PRO-{secrets.randbelow(9000000000) + 1000000000}"
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(token: str = Depends(oauth2_scheme)):
     settings = get_settings()
     payload = decode_token(token)
     if not payload:
@@ -62,8 +62,9 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             headers={"WWW-Authenticate": "Bearer"}
         )
     subject = payload.get("sub")
-    user = db.query(User).filter(User.id == subject).first()
-    if not user and settings.demo_login_enabled and subject == settings.demo_login_user_id:
+
+    # Check demo user before touching the database
+    if settings.demo_login_enabled and subject == settings.demo_login_user_id:
         return SimpleNamespace(
             id=uuid.UUID(settings.demo_login_user_id),
             full_name=settings.demo_login_full_name,
@@ -71,6 +72,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             created_at=datetime.now(timezone.utc),
             hashed_password="",
         )
+
+    db = SessionLocal(bind=get_engine())
+    try:
+        user = db.query(User).filter(User.id == subject).first()
+    finally:
+        db.close()
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
