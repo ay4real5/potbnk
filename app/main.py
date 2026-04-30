@@ -3,7 +3,6 @@ import os
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.database import Base, get_engine
 from app.core.config import get_settings
 from app.models import models
 from app.api.routes import auth, accounts, supabase
@@ -43,11 +42,9 @@ logger.info(
 )
 
 if cfg.auto_create_tables:
-    logger.info("Initializing database tables...")
-    Base.metadata.create_all(bind=get_engine())
-    logger.info("Database tables ready.")
+    logger.info("AUTO_CREATE_TABLES enabled; schema init deferred to first DB request.")
 else:
-    logger.info("AUTO_CREATE_TABLES disabled; skipping startup table creation.")
+    logger.info("AUTO_CREATE_TABLES disabled; schema init skipped.")
 
 app = FastAPI(
     title="Hunch Banking API",
