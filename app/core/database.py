@@ -3,6 +3,7 @@ from threading import Lock
 from functools import lru_cache
 
 from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.core.config import get_settings
@@ -19,8 +20,11 @@ _schema_ready = False
 def get_engine():
     database_url = get_settings().database_url
     if database_url.startswith(("postgres://", "postgresql://")) and "sslmode=" not in database_url:
+        host = make_url(database_url).host or ""
+        local_hosts = {"localhost", "127.0.0.1", "db"}
+        sslmode = "disable" if host in local_hosts else "require"
         separator = "&" if "?" in database_url else "?"
-        database_url = f"{database_url}{separator}sslmode=require"
+        database_url = f"{database_url}{separator}sslmode={sslmode}"
     return create_engine(database_url)
 
 

@@ -33,6 +33,18 @@ def _check_rate_limit(ip: str):
         )
     _login_attempts[ip].append(now)
 
+
+def _client_ip(request: Request) -> str:
+    # Prefer proxy-provided client IP when available (e.g. Vercel/edge proxies).
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        first_hop = xff.split(",", 1)[0].strip()
+        if first_hop:
+            return first_hop
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
 # ── In-memory password reset tokens {token: {user_id, expires_at}} ───────────
 _reset_tokens: dict = {}
 
@@ -116,7 +128,7 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
 @router.post("/login", response_model=TokenResponse)
 def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     settings = get_settings()
-    _check_rate_limit(request.client.host)
+    _check_rate_limit(_client_ip(request))
 
     if (
         settings.demo_login_enabled
