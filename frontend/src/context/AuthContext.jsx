@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import api from '../api/client';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
@@ -40,7 +41,17 @@ export function AuthProvider({ children }) {
   }, [token, logout]);
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, fetchMe }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        login,
+        logout,
+        fetchMe,
+        supabase,
+        isSupabaseConfigured,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

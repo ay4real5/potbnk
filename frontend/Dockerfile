@@ -8,9 +8,13 @@ RUN npm ci
 
 COPY . .
 
-# Allow the API base URL to be injected at build time
-ARG VITE_API_BASE_URL=http://localhost:8000
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+# Allow runtime config to be injected at build time
+ARG VITE_API_URL=http://localhost:8000
+ARG VITE_SUPABASE_URL=
+ARG VITE_SUPABASE_PUBLISHABLE_KEY=
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
 
 RUN npm run build
 
