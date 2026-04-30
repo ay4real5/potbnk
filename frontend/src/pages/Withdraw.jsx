@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
-import Navbar from '../components/Navbar';
+import BankShell from '../components/BankShell';
+import { Info, AlertTriangle } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 export default function Withdraw() {
@@ -40,23 +41,20 @@ export default function Withdraw() {
   const selectedAccount = accounts.find((a) => a.id === form.account_id);
 
   return (
-    <div className="min-h-screen bg-bank-surface">
-      <Navbar />
-      <main className="max-w-lg mx-auto px-4 py-12">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-1.5 text-gray-500 hover:text-bank-dark text-sm mb-8 transition-colors"
-        >
-          ← Back to dashboard
-        </button>
+    <BankShell title="Withdraw">
+      <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-        <h1 className="text-2xl font-bold text-bank-dark mb-1">Withdraw funds</h1>
-        <p className="text-gray-500 text-sm mb-8">Withdraw from your Hunch account.</p>
-
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white border border-gray-200 rounded-xl p-7 flex flex-col gap-5 shadow-sm"
-        >
+          {/* Form */}
+          <div className="lg:col-span-2">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-bank-dark mb-1">Withdraw Funds</h2>
+              <p className="text-gray-500 text-sm">Withdraw from your Hunch account.</p>
+            </div>
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white border border-gray-200 rounded-xl p-7 flex flex-col gap-5 shadow-sm"
+            >
           <div>
             <label className="block text-sm font-medium text-bank-dark mb-1.5">Account</label>
             <select
@@ -116,12 +114,38 @@ export default function Withdraw() {
           <button
             type="submit"
             disabled={loading}
-            className="hnt-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="hnt-btn-primary disabled:opacity-50 disabled:cursor-not-allowed w-full"
           >
-            {loading ? 'Processing…' : 'Withdraw funds'}
+            {loading ? 'Processing…' : 'Withdraw Funds'}
           </button>
         </form>
-      </main>
-    </div>
+          </div>
+
+          {/* Info sidebar */}
+          <div className="flex flex-col gap-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Info size={16} className="text-bank-accent" />
+                <h3 className="font-bold text-bank-dark text-sm">Withdrawal Information</h3>
+              </div>
+              <ul className="space-y-3 text-sm text-gray-600">
+                <li>Funds are available immediately after withdrawal.</li>
+                <li>You cannot withdraw more than your available balance.</li>
+                <li>Large withdrawals may require identity verification.</li>
+              </ul>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle size={15} className="text-amber-600" />
+                <h3 className="font-bold text-amber-800 text-sm">Reminder</h3>
+              </div>
+              <p className="text-sm text-amber-700">
+                Ensure sufficient funds remain to cover any pending transactions or minimum balance requirements.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </BankShell>
   );
 }

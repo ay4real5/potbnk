@@ -1,9 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../api/client';
-import Navbar from '../components/Navbar';
-import { SkeletonRow } from '../components/Skeleton';
-import { ArrowLeft, Search, Download, X } from 'lucide-react';
+import BankShell from '../components/BankShell';
+import { ArrowLeft, Search, Download, X, FileText } from 'lucide-react';
 
 const typeBadge = (type) => {
   const base = 'text-xs font-semibold px-2.5 py-0.5 rounded-full';
@@ -84,10 +83,13 @@ export default function Transactions() {
     setSearchText('');
   };
 
+  const pageTitle = accountId
+    ? (account ? `${account.account_type} · ${account.account_number}` : 'Transaction History')
+    : 'All Transactions';
+
   return (
-    <div className="min-h-screen bg-bank-surface">
-      <Navbar />
-      <main className="max-w-3xl mx-auto px-4 py-10">
+    <BankShell title="Transactions">
+      <div className="p-6 lg:p-8 max-w-5xl mx-auto">
         <Link
           to="/dashboard"
           className="inline-flex items-center gap-1.5 text-gray-500 hover:text-bank-dark text-sm mb-6 transition-colors"
@@ -96,7 +98,8 @@ export default function Transactions() {
         </Link>
 
         {/* Account header */}
-        <div className="bg-white border border-gray-200 rounded-xl px-6 py-5 mb-4 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-xl px-6 py-5 mb-4 shadow-sm overflow-hidden relative">
+          <div className="absolute right-0 top-0 bottom-0 w-1 bg-bank-dark rounded-r-xl" />
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-xl font-bold text-bank-dark">Transaction History</h1>
@@ -169,46 +172,62 @@ export default function Transactions() {
 
         {/* Transaction list */}
         {txs.length === 0 && !loading ? (
-          <div className="bg-white border border-gray-200 rounded-xl py-16 text-center text-gray-400 text-sm shadow-sm">
-            {filtersActive ? 'No transactions match your filters.' : 'No transactions yet.'}
+          <div className="bg-white border border-gray-200 rounded-xl py-20 text-center shadow-sm">
+            <FileText size={36} className="text-gray-200 mx-auto mb-3" />
+            <p className="text-gray-400 text-sm">{filtersActive ? 'No transactions match your filters.' : 'No transactions yet.'}</p>
           </div>
         ) : (
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left">Date &amp; Time</th>
+                  <th className="px-6 py-3 text-left">Description</th>
+                  <th className="px-6 py-3 text-left">Type</th>
+                  <th className="px-6 py-3 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
             {txs.map((tx, i) => (
-              <div
+              <tr
                 key={tx.id}
-                className={`flex items-center justify-between px-6 py-4 ${
-                  i < txs.length - 1 ? 'border-b border-gray-100' : ''
-                }`}
+                className="hover:bg-gray-50 transition-colors"
               >
-                <div className="flex flex-col gap-1">
+                <td className="px-6 py-4 text-gray-400 text-xs whitespace-nowrap">
+                  {new Date(tx.created_at).toLocaleString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit',
+                  })}
+                </td>
+                <td className="px-6 py-4 font-medium text-bank-dark max-w-[200px] truncate">
+                  {tx.description || '—'}
+                </td>
+                <td className="px-6 py-4">
                   <span className={typeBadge(tx.type)}>{tx.type}</span>
-                  <p className="text-sm font-medium text-bank-dark mt-0.5">
-                    {tx.description || '—'}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {new Date(tx.created_at).toLocaleString('en-US', {
-                      month: 'short', day: 'numeric', year: 'numeric',
-                      hour: '2-digit', minute: '2-digit',
-                    })}
-                  </p>
-                </div>
-                <span className={typeAmountClass(tx.type)}>
+                </td>
+                <td className={`px-6 py-4 font-bold text-right whitespace-nowrap ${typeAmountClass(tx.type)}`}>
                   {typeSign(tx.type)}$
                   {parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
+                </td>
+              </tr>
             ))}
+              </tbody>
+            </table>
           </div>
         )}
 
         {loading && (
-          <div className="divide-y divide-gray-100">
-            {[0, 1, 2, 3, 4, 5].map((i) => <SkeletonRow key={i} />)}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            {[0,1,2,3,4,5].map((i) => (
+              <div key={i} className="px-6 py-4 border-b border-gray-100 flex gap-4">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 flex-1 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+              </div>
+            ))}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </BankShell>
   );
 }
-

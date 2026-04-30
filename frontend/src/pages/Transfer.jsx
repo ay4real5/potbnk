@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
-import Navbar from '../components/Navbar';
-import { Search, UserCheck } from 'lucide-react';
+import BankShell from '../components/BankShell';
+import { Search, UserCheck, Clock, Info, ShieldCheck } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 export default function Transfer() {
@@ -86,23 +86,21 @@ export default function Transfer() {
   const selectedSender = accounts.find((a) => a.id === form.sender_account_id);
 
   return (
-    <div className="min-h-screen bg-bank-surface">
-      <Navbar />
-      <main className="max-w-lg mx-auto px-4 py-12">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-1.5 text-gray-500 hover:text-bank-dark text-sm mb-8 transition-colors"
-        >
-          ← Back to dashboard
-        </button>
+    <BankShell title="Transfer Funds">
+      <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-        <h1 className="text-2xl font-bold text-bank-dark mb-1">Transfer funds</h1>
-        <p className="text-gray-500 text-sm mb-8">Send money to another Hunch account.</p>
+          {/* Form column */}
+          <div className="lg:col-span-2">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-bank-dark mb-1">Transfer Funds</h2>
+              <p className="text-gray-500 text-sm">Send money to another Hunch account.</p>
+            </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white border border-gray-200 rounded-xl p-7 flex flex-col gap-5 shadow-sm"
-        >
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white border border-gray-200 rounded-xl p-7 flex flex-col gap-5 shadow-sm"
+            >
           <div>
             <label className="block text-sm font-medium text-bank-dark mb-1.5">From account</label>
             <select
@@ -192,10 +190,45 @@ export default function Transfer() {
             disabled={loading || !resolvedRecipient}
             className="mt-1 w-full bg-bank-dark text-white font-semibold py-3 rounded-lg hover:bg-bank-teal transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Processing…' : 'Send transfer'}
+            {loading ? 'Processing…' : 'Send Transfer'}
           </button>
         </form>
-      </main>
-    </div>
+      </div>
+
+          {/* Info sidebar */}
+          <div className="flex flex-col gap-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock size={16} className="text-bank-accent" />
+                <h3 className="font-bold text-bank-dark text-sm">Processing Times</h3>
+              </div>
+              <ul className="space-y-3 text-sm text-gray-600">
+                <li className="flex gap-2"><span className="text-bank-dark font-semibold w-24 shrink-0">Same day</span>Transfers submitted before 5:00 PM ET</li>
+                <li className="flex gap-2"><span className="text-bank-dark font-semibold w-24 shrink-0">Next day</span>Transfers after cut-off or on weekends</li>
+                <li className="flex gap-2"><span className="text-bank-dark font-semibold w-24 shrink-0">Holidays</span>Processed next business day</li>
+              </ul>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Info size={16} className="text-bank-accent" />
+                <h3 className="font-bold text-bank-dark text-sm">Transfer Limits</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex justify-between"><span>Per transfer</span><span className="font-semibold text-bank-dark">$10,000.00</span></li>
+                <li className="flex justify-between"><span>Daily limit</span><span className="font-semibold text-bank-dark">$25,000.00</span></li>
+                <li className="flex justify-between"><span>Monthly limit</span><span className="font-semibold text-bank-dark">Unlimited</span></li>
+              </ul>
+            </div>
+            <div className="bg-bank-dark rounded-xl p-5 text-white">
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldCheck size={15} className="text-bank-accent" />
+                <p className="text-xs font-bold uppercase tracking-widest text-bank-accent">Secure</p>
+              </div>
+              <p className="text-sm text-white/70">All transfers are encrypted and monitored for unauthorized activity.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </BankShell>
   );
 }

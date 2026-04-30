@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
-import Navbar from '../components/Navbar';
+import BankShell from '../components/BankShell';
+import { Info, ShieldCheck } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 export default function Deposit() {
@@ -40,23 +41,20 @@ export default function Deposit() {
   const selectedAccount = accounts.find((a) => a.id === form.account_id);
 
   return (
-    <div className="min-h-screen bg-bank-surface">
-      <Navbar />
-      <main className="max-w-lg mx-auto px-4 py-12">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-1.5 text-gray-500 hover:text-bank-dark text-sm mb-8 transition-colors"
-        >
-          ← Back to dashboard
-        </button>
+    <BankShell title="Deposit">
+      <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-        <h1 className="text-2xl font-bold text-bank-dark mb-1">Deposit funds</h1>
-        <p className="text-gray-500 text-sm mb-8">Add money to your Hunch account.</p>
-
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white border border-gray-200 rounded-xl p-7 flex flex-col gap-5 shadow-sm"
-        >
+          {/* Form */}
+          <div className="lg:col-span-2">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-bank-dark mb-1">Deposit Funds</h2>
+              <p className="text-gray-500 text-sm">Add money to your Hunch account.</p>
+            </div>
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white border border-gray-200 rounded-xl p-7 flex flex-col gap-5 shadow-sm"
+            >
           <div>
             <label className="block text-sm font-medium text-bank-dark mb-1.5">Account</label>
             <select
@@ -117,10 +115,36 @@ export default function Deposit() {
             disabled={loading || !form.account_id || !form.amount}
             className="mt-1 w-full bg-bank-dark text-white font-semibold py-3 rounded-lg hover:bg-bank-teal transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Processing…' : 'Deposit funds'}
+            {loading ? 'Processing…' : 'Deposit Funds'}
           </button>
         </form>
-      </main>
-    </div>
+          </div>
+
+          {/* Info sidebar */}
+          <div className="flex flex-col gap-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Info size={16} className="text-bank-accent" />
+                <h3 className="font-bold text-bank-dark text-sm">Deposit Information</h3>
+              </div>
+              <ul className="space-y-3 text-sm text-gray-600">
+                <li>Deposits are credited immediately to your account.</li>
+                <li>There is no minimum deposit amount.</li>
+                <li>Deposits over $10,000 may require additional documentation.</li>
+              </ul>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <ShieldCheck size={16} className="text-bank-accent" />
+                <h3 className="font-bold text-bank-dark text-sm">FDIC Insured</h3>
+              </div>
+              <p className="text-sm text-gray-600">
+                Your deposits are protected up to $250,000 per depositor by the Federal Deposit Insurance Corporation.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </BankShell>
   );
 }
