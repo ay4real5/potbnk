@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from types import SimpleNamespace
 from app.core.database import get_db
+from app.core.config import get_settings
 from app.core.security import verify_password, get_password_hash, create_access_token, decode_token
 from app.models.models import User, Account
 from app.schemas.auth import UserRegister, TokenResponse, UserProfile, UserUpdate, ForgotPasswordRequest, ResetPasswordRequest
@@ -39,6 +41,7 @@ def generate_account_number():
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    settings = get_settings()
     payload = decode_token(token)
     if not payload:
         raise HTTPException(
@@ -46,7 +49,16 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             detail="Session expired. Please log in again.",
             headers={"WWW-Authenticate": "Bearer"}
         )
-    user = db.query(User).filter(User.id == payload.get("sub")).first()
+    subject = payload.get("sub")
+    user = db.query(User).filter(User.id == subject).first()
+    if not user and settings.demo_login_enabled and subject == settings.demo_login_user_id:
+        return SimpleNamespace(
+            id=uuid.UUID(settings.demo_login_user_id),
+            full_name=settings.demo_login_full_name,
+            email=settings.demo_login_email,
+            created_at=datetime.now(timezone.utc),
+            hashed_password="",
+        )
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
@@ -103,7 +115,21 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    settings = get_settings()
     _check_rate_limit(request.client.host)
+
+    if (
+        settings.demo_login_enabled
+        and form_data.username.lower() == settings.demo_login_email.lower()
+        and form_data.password == settings.demo_login_password
+    ):
+        token = create_access_token(data={"sub": settings.demo_login_user_id})
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "expires_in": 1800,
+        }
+
     user = db.query(User).filter(User.email == form_data.username).first()
 
     if not user or not verify_password(form_data.password, user.hashed_password):

@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     debug: bool = False
     auto_create_tables: bool = True
 
+    # Demo access fallback
+    demo_login_enabled: bool = True
+    demo_login_email: str = "demo@potbnk.app"
+    demo_login_password: str = "DemoLogin#2026!"
+    demo_login_full_name: str = "Demo User"
+    demo_login_user_id: str = "00000000-0000-4000-8000-000000000001"
+
     # Supabase
     supabase_url: str | None = None
     supabase_publishable_key: str | None = None
