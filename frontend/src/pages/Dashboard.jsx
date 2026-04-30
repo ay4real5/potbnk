@@ -3,26 +3,55 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import BankShell from '../components/BankShell';
-import { ArrowLeftRight, MinusCircle, ChevronRight, TrendingUp, PlusCircle, Settings, Plus, X, Wallet, BarChart2, ShieldCheck } from 'lucide-react';
+import {
+  ArrowLeftRight, MinusCircle, ChevronRight,
+  PlusCircle, Settings, Plus, X, ShieldCheck,
+} from 'lucide-react';
 
-const typeColor = (type) => {
-  if (type === 'DEPOSIT') return 'text-emerald-600';
-  if (type === 'WITHDRAWAL') return 'text-red-600';
-  return 'text-blue-600';
-};
+// ── helpers ────────────────────────────────────────────────────────────────
 
 const typeSign = (type, accountIds, tx) => {
   if (type === 'DEPOSIT') return '+';
   if (type === 'WITHDRAWAL') return '-';
-  // TRANSFER: debit if sender is one of our accounts
   return accountIds.has(tx.sender_id) ? '-' : '+';
 };
 
-const typeBadge = (type) => {
-  if (type === 'DEPOSIT') return 'bg-emerald-50 text-emerald-700';
-  if (type === 'WITHDRAWAL') return 'bg-red-50 text-red-700';
-  return 'bg-blue-50 text-blue-700';
-};
+const CARD_GRADIENTS = [
+  'from-[#012d2a] to-[#024f54]',
+  'from-[#1a3a4a] to-[#0d5e6a]',
+  'from-[#1e3a5f] to-[#2d5986]',
+  'from-[#2d1b4e] to-[#4a2b8a]',
+];
+
+// SVG sparkline derived from transaction amounts
+function Sparkline({ values }) {
+  if (!values || values.length < 2) {
+    return <div className="h-12 rounded-xl bg-white/5" />;
+  }
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const W = 200, H = 48;
+  const pts = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * W;
+    const y = H - ((v - min) / range) * H * 0.8 - H * 0.1;
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  });
+  return (
+    <svg viewBox={'0 0 ' + W + ' ' + H} preserveAspectRatio="none" className="w-full h-12 opacity-70">
+      <polyline
+        points={pts.join(' ')}
+        fill="none"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const { user, fetchMe } = useAuth();
@@ -43,7 +72,7 @@ export default function Dashboard() {
         const { data: accs } = await api.get('/accounts/');
         setAccounts(accs);
         if (accs.length > 0) {
-          const { data: txs } = await api.get('/accounts/transactions?limit=5');
+          const { data: txs } = await api.get('/accounts/transactions?limit=6');
           setRecentTx(txs);
         }
       } finally {
@@ -55,6 +84,9 @@ export default function Dashboard() {
 
   const totalBalance = accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0);
   const myAccountIds = new Set(accounts.map((a) => a.id));
+  const sparkValues = recentTx.length > 1
+    ? recentTx.map((tx) => parseFloat(tx.amount)).reverse()
+    : [1, 2.5, 1.8, 3.2, 2.8, 4.1, 3.6];
 
   const handleOpenAccount = async () => {
     setOpenAcctError('');
@@ -63,7 +95,6 @@ export default function Dashboard() {
     try {
       const { data } = await api.post('/accounts/open', { account_type: openAcctType });
       setOpenAcctSuccess(data.message);
-      // Refresh account list
       const { data: accs } = await api.get('/accounts/');
       setAccounts(accs);
     } catch (err) {
@@ -73,13 +104,6 @@ export default function Dashboard() {
     }
   };
 
-  const CARD_GRADIENTS = [
-    'from-bank-dark to-[#024f54]',
-    'from-[#1a3a4a] to-[#0d5e6a]',
-    'from-[#1e3a5f] to-[#2d5986]',
-    'from-[#134e4a] to-[#065f46]',
-  ];
-
   const greeting = () => {
     const h = new Date().getHours();
     if (h < 12) return 'Good morning';
@@ -87,105 +111,119 @@ export default function Dashboard() {
     return 'Good evening';
   };
 
+  // ── Skeleton ────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <BankShell title="Dashboard">
-        <div className="p-6 lg:p-8">
-          <div className="mb-7 h-9 w-56 bg-gray-200 rounded animate-pulse" />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            {[0, 1, 2].map((i) => <div key={i} className="h-28 bg-gray-200 rounded-xl animate-pulse" />)}
+        <div className="p-6 lg:p-10 max-w-5xl mx-auto space-y-8">
+          <div className="h-52 bg-slate-200 rounded-3xl animate-pulse" />
+          <div className="grid grid-cols-4 gap-3">
+            {[0, 1, 2, 3].map((i) => <div key={i} className="h-20 bg-slate-200 rounded-2xl animate-pulse" />)}
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white rounded-xl h-80 animate-pulse" />
-            <div className="bg-white rounded-xl h-80 animate-pulse" />
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {[0, 1, 2].map((i) => <div key={i} className="h-44 bg-slate-200 rounded-3xl animate-pulse" />)}
+          </div>
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 h-64 bg-slate-200 rounded-3xl animate-pulse" />
+            <div className="h-64 bg-slate-200 rounded-3xl animate-pulse" />
           </div>
         </div>
       </BankShell>
     );
   }
 
+  // ── Render ──────────────────────────────────────────────────────────────
   return (
     <BankShell title="Dashboard">
-      <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="p-6 lg:p-10 max-w-5xl mx-auto space-y-8">
 
-        {/* Greeting */}
-        <div className="mb-7">
-          <p className="text-gray-500 text-sm">{greeting()},</p>
-          <h2 className="text-2xl font-bold text-bank-dark">{user?.full_name ?? 'Welcome back'}</h2>
-        </div>
+        {/* ── Hero balance card ──────────────────────────────────────────── */}
+        <div className="relative bg-gradient-to-br from-emerald-950 via-[#012d2a] to-[#024f54] rounded-3xl p-8 lg:p-10 text-white border border-white/10 shadow-xl overflow-hidden">
+          <div className="pointer-events-none absolute -top-20 -right-20 w-72 h-72 rounded-full bg-emerald-400/10 blur-3xl" />
+          <div className="pointer-events-none absolute bottom-0 left-1/3 w-56 h-56 rounded-full bg-teal-500/10 blur-2xl" />
 
-        {/* KPI row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-bank-dark rounded-xl p-5 text-white">
-            <div className="flex items-start justify-between mb-3">
-              <p className="text-white/50 text-xs font-semibold uppercase tracking-wider">Total Balance</p>
-              <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                <TrendingUp size={17} className="text-bank-accent" />
-              </div>
+          <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-8">
+            <div>
+              <p className="text-slate-400 text-sm font-medium mb-1">
+                {greeting()}, {user?.full_name?.split(' ')[0] ?? 'there'}
+              </p>
+              <p className="text-slate-500 text-[11px] uppercase tracking-widest font-semibold mb-3">
+                Total Balance · USD
+              </p>
+              <p className="text-5xl font-extrabold tracking-tight leading-none tabular-nums">
+                ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </p>
+              <p className="text-slate-500 text-xs mt-3">
+                Across {accounts.length} account{accounts.length !== 1 ? 's' : ''}
+              </p>
             </div>
-            <p className="text-3xl font-extrabold tracking-tight">
-              ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-            </p>
-            <p className="text-white/40 text-xs mt-1">All accounts · USD</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-xl p-5">
-            <div className="flex items-start justify-between mb-3">
-              <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Accounts</p>
-              <div className="w-9 h-9 rounded-lg bg-bank-light flex items-center justify-center shrink-0">
-                <Wallet size={17} className="text-bank-accent" />
-              </div>
+
+            <div className="sm:w-40 shrink-0">
+              <p className="text-slate-500 text-[10px] uppercase tracking-widest mb-2">Activity trend</p>
+              <Sparkline values={sparkValues} />
+              <p className="text-slate-600 text-[10px] mt-1 text-right">Last {sparkValues.length} transactions</p>
             </div>
-            <p className="text-3xl font-extrabold text-bank-dark">{accounts.length}</p>
-            <p className="text-gray-400 text-xs mt-1">Active accounts</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-xl p-5">
-            <div className="flex items-start justify-between mb-3">
-              <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Recent Activity</p>
-              <div className="w-9 h-9 rounded-lg bg-bank-light flex items-center justify-center shrink-0">
-                <BarChart2 size={17} className="text-bank-teal" />
-              </div>
-            </div>
-            <p className="text-3xl font-extrabold text-bank-dark">{recentTx.length}</p>
-            <p className="text-gray-400 text-xs mt-1">Transactions</p>
           </div>
         </div>
 
-        {/* Account cards */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">My Accounts</h3>
+        {/* ── Quick action grid ──────────────────────────────────────────── */}
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { icon: ArrowLeftRight, label: 'Transfer', href: '/transfer',  iconCls: 'bg-sky-50 text-sky-600 ring-sky-100'           },
+            { icon: PlusCircle,     label: 'Deposit',  href: '/deposit',   iconCls: 'bg-emerald-50 text-emerald-600 ring-emerald-100' },
+            { icon: MinusCircle,    label: 'Withdraw', href: '/withdraw',  iconCls: 'bg-rose-50 text-rose-500 ring-rose-100'          },
+            { icon: Settings,       label: 'Settings', href: '/settings',  iconCls: 'bg-violet-50 text-violet-500 ring-violet-100'    },
+          ].map(({ icon: Icon, label, href, iconCls }) => (
+            <button
+              key={href}
+              onClick={() => navigate(href)}
+              className="flex flex-col items-center gap-2.5 bg-white rounded-2xl py-5 px-2 shadow-sm border border-slate-100 transition-all duration-300 hover:scale-[1.04] hover:shadow-md group"
+            >
+              <div className={`w-11 h-11 rounded-full flex items-center justify-center ring-4 ${iconCls} transition-all duration-300 group-hover:ring-8`}>
+                <Icon size={17} />
+              </div>
+              <span className="text-xs font-semibold text-slate-500 group-hover:text-slate-800 transition-colors">{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* ── Account cards ──────────────────────────────────────────────── */}
+        <div>
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">My Accounts</h3>
             {!showOpenAcct && (
               <button
                 onClick={() => { setShowOpenAcct(true); setOpenAcctSuccess(''); setOpenAcctError(''); }}
-                className="flex items-center gap-1.5 text-xs font-semibold text-bank-teal hover:text-bank-dark transition-colors"
+                className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-800 transition-colors"
               >
                 <Plus size={13} /> Open Account
               </button>
             )}
           </div>
+
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {accounts.map((acc, idx) => (
               <div
                 key={acc.id}
-                className={`bg-gradient-to-br ${CARD_GRADIENTS[idx % CARD_GRADIENTS.length]} rounded-xl p-6 text-white shadow-sm relative overflow-hidden`}
+                className={`bg-gradient-to-br ${CARD_GRADIENTS[idx % CARD_GRADIENTS.length]} rounded-3xl p-6 text-white border border-white/10 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-xl`}
               >
-                <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full bg-white/5 pointer-events-none" />
-                <div className="absolute right-4 top-16 w-16 h-16 rounded-full bg-white/5 pointer-events-none" />
-                <div className="flex items-start justify-between mb-6 relative">
-                  <span className="text-xs font-bold uppercase tracking-widest text-white/60">
+                <div className="pointer-events-none absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/5" />
+                <div className="pointer-events-none absolute right-8 top-24 w-24 h-24 rounded-full bg-white/5" />
+                <div className="flex items-start justify-between mb-7 relative">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">
                     {acc.account_type.replace(/_/g, ' ')}
                   </span>
-                  <div className="w-8 h-5 rounded-sm bg-yellow-400/80" />
+                  <div className="w-8 h-5 rounded bg-yellow-400/70" />
                 </div>
-                <p className="text-2xl font-extrabold tracking-tight mb-1 relative">
+                <p className="text-3xl font-extrabold tracking-tight mb-1 relative tabular-nums">
                   ${parseFloat(acc.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </p>
-                <p className="text-white/40 text-xs mb-5 relative">Available · USD</p>
+                <p className="text-white/40 text-xs mb-7 relative">Available · USD</p>
                 <div className="flex items-center justify-between relative">
-                  <span className="text-white/50 text-xs font-mono">{acc.account_number}</span>
+                  <span className="text-white/40 text-xs font-mono tracking-widest">{acc.account_number}</span>
                   <Link
                     to={`/transactions/${acc.id}`}
-                    className="flex items-center gap-1 text-xs font-semibold text-white/80 hover:text-white transition-colors"
+                    className="flex items-center gap-1 text-xs font-semibold text-white/60 hover:text-white transition-colors"
                   >
                     History <ChevronRight size={12} />
                   </Link>
@@ -195,15 +233,18 @@ export default function Dashboard() {
           </div>
 
           {showOpenAcct && (
-            <div className="mt-4 bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <div className="mt-5 bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-bank-dark text-sm">Open a new account</h3>
-                <button onClick={() => { setShowOpenAcct(false); setOpenAcctSuccess(''); setOpenAcctError(''); }} className="text-gray-400 hover:text-gray-600">
+                <h3 className="font-bold text-slate-800 text-sm">Open a new account</h3>
+                <button
+                  onClick={() => { setShowOpenAcct(false); setOpenAcctSuccess(''); setOpenAcctError(''); }}
+                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                >
                   <X size={16} />
                 </button>
               </div>
               {openAcctSuccess ? (
-                <div className="text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-sm">{openAcctSuccess}</div>
+                <div className="text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm">{openAcctSuccess}</div>
               ) : (
                 <div className="flex flex-col sm:flex-row gap-3">
                   <select value={openAcctType} onChange={(e) => setOpenAcctType(e.target.value)} className="hnt-input flex-1">
@@ -212,7 +253,11 @@ export default function Dashboard() {
                     <option value="BUSINESS_CHECKING">Business Checking</option>
                     <option value="MONEY_MARKET">Money Market</option>
                   </select>
-                  <button onClick={handleOpenAccount} disabled={openAcctLoading} className="bg-bank-dark text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:bg-bank-teal transition-colors disabled:opacity-50">
+                  <button
+                    onClick={handleOpenAccount}
+                    disabled={openAcctLoading}
+                    className="bg-bank-dark text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-bank-teal transition-all duration-300 disabled:opacity-50"
+                  >
                     {openAcctLoading ? 'Opening…' : 'Confirm'}
                   </button>
                 </div>
@@ -222,107 +267,109 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Bottom 2-col */}
+        {/* ── Recent activity + sidebar ──────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* Recent transactions — table */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h3 className="font-bold text-bank-dark text-sm">Recent Transactions</h3>
-              <Link to="/transactions" className="text-xs font-semibold text-bank-teal hover:text-bank-dark transition-colors flex items-center gap-1">
+          {/* Activity feed */}
+          <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+              <h3 className="font-bold text-slate-800 text-sm">Recent Activity</h3>
+              <Link
+                to="/transactions"
+                className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 transition-colors flex items-center gap-1"
+              >
                 View all <ChevronRight size={12} />
               </Link>
             </div>
+
             {recentTx.length === 0 ? (
-              <div className="py-16 text-center text-gray-400 text-sm">No transactions yet.</div>
+              <div className="py-16 text-center">
+                <p className="text-slate-400 text-sm">No transactions yet.</p>
+              </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                    <th className="px-6 py-3 text-left">Date</th>
-                    <th className="px-6 py-3 text-left">Description</th>
-                    <th className="px-6 py-3 text-left">Type</th>
-                    <th className="px-6 py-3 text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {recentTx.map((tx) => (
-                    <tr key={tx.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-3.5 text-gray-400 text-xs whitespace-nowrap">
-                        {new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </td>
-                      <td className="px-6 py-3.5 font-medium text-bank-dark max-w-[160px] truncate">
-                        {tx.description || '—'}
-                      </td>
-                      <td className="px-6 py-3.5">
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                          tx.type === 'DEPOSIT' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                          tx.type === 'WITHDRAWAL' ? 'bg-red-50 text-red-700 border border-red-200' :
-                          'bg-blue-50 text-blue-700 border border-blue-200'
-                        }`}>{tx.type}</span>
-                      </td>
-                      <td className={`px-6 py-3.5 font-bold text-right whitespace-nowrap ${
-                        tx.type === 'DEPOSIT' ? 'text-emerald-600' :
-                        tx.type === 'WITHDRAWAL' ? 'text-red-600' : 'text-blue-600'
-                      }`}>
-                        {tx.type === 'DEPOSIT' ? '+' : tx.type === 'WITHDRAWAL' ? '-' :
-                          myAccountIds.has(tx.sender_id) ? '-' : '+'}
-                        ${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <ul className="divide-y divide-slate-50">
+                {recentTx.map((tx) => {
+                  const isDeposit    = tx.type === 'DEPOSIT';
+                  const isWithdrawal = tx.type === 'WITHDRAWAL';
+                  const sign         = typeSign(tx.type, myAccountIds, tx);
+                  const amountColor  = isDeposit ? 'text-emerald-600' : isWithdrawal ? 'text-slate-800' : 'text-sky-600';
+                  const iconCls      = isDeposit
+                    ? 'bg-emerald-50 text-emerald-500'
+                    : isWithdrawal
+                    ? 'bg-rose-50 text-rose-500'
+                    : 'bg-sky-50 text-sky-500';
+                  const TxIcon = isDeposit ? PlusCircle : isWithdrawal ? MinusCircle : ArrowLeftRight;
+                  return (
+                    <li key={tx.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconCls}`}>
+                        <TxIcon size={15} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-700 truncate">
+                          {tx.description || tx.type}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {new Date(tx.created_at).toLocaleDateString('en-US', {
+                            month: 'short', day: 'numeric', year: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                      <p className={`text-sm font-bold tabular-nums shrink-0 ${amountColor}`}>
+                        {sign}${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
 
           {/* Right sidebar */}
           <div className="flex flex-col gap-4">
-            {/* Quick actions */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100">
-                <h3 className="font-bold text-bank-dark text-sm">Quick Actions</h3>
-              </div>
-              <div className="p-3 flex flex-col gap-1">
-                {[
-                  { icon: ArrowLeftRight, label: 'Transfer Funds', sub: 'Send to another account', href: '/transfer', color: 'bg-blue-50 text-blue-500' },
-                  { icon: PlusCircle,     label: 'Deposit',        sub: 'Add money',               href: '/deposit',  color: 'bg-emerald-50 text-emerald-500' },
-                  { icon: MinusCircle,    label: 'Withdraw',       sub: 'Take funds out',           href: '/withdraw', color: 'bg-red-50 text-red-500' },
-                  { icon: Settings,       label: 'Settings',       sub: 'Manage account',           href: '/settings', color: 'bg-purple-50 text-purple-500' },
-                ].map(({ icon: Icon, label, sub, href, color }) => (
-                  <button
-                    key={href}
-                    onClick={() => navigate(href)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group text-left w-full"
-                  >
-                    <div className={`w-9 h-9 rounded-lg ${color} flex items-center justify-center shrink-0`}>
-                      <Icon size={15} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-bank-dark group-hover:text-bank-teal transition-colors">{label}</p>
-                      <p className="text-xs text-gray-400 truncate">{sub}</p>
-                    </div>
-                    <ChevronRight size={13} className="ml-auto text-gray-300 shrink-0 group-hover:text-bank-teal transition-colors" />
-                  </button>
-                ))}
+
+            {/* Summary */}
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-5">Summary</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">Active accounts</span>
+                  <span className="text-sm font-bold text-slate-800">{accounts.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">Recent activity</span>
+                  <span className="text-sm font-bold text-slate-800">{recentTx.length} transactions</span>
+                </div>
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-sm text-slate-500">Total balance</span>
+                  <span className="text-sm font-bold text-emerald-600 tabular-nums">
+                    ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Security card */}
-            <div className="bg-bank-dark rounded-xl p-5 text-white">
-              <div className="flex items-center gap-2 mb-3">
-                <ShieldCheck size={16} className="text-bank-accent" />
-                <p className="text-xs font-bold uppercase tracking-widest text-bank-accent">Security</p>
+            {/* Security */}
+            <div className="relative bg-gradient-to-br from-emerald-950 to-[#024f54] rounded-3xl p-6 text-white border border-white/10 shadow-sm overflow-hidden">
+              <div className="pointer-events-none absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/5" />
+              <div className="flex items-center gap-2.5 mb-3 relative">
+                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                  <ShieldCheck size={14} className="text-emerald-400" />
+                </div>
+                <p className="text-xs font-bold uppercase tracking-widest text-emerald-400">Security</p>
               </div>
-              <p className="text-sm text-white/70 leading-relaxed mb-3">
-                Your account is protected with 256-bit encryption and monitored 24/7.
+              <p className="text-sm text-white/60 leading-relaxed mb-5 relative">
+                256-bit encryption and 24/7 monitoring keep your funds safe.
               </p>
-              <button onClick={() => navigate('/settings')} className="text-xs font-semibold text-bank-accent hover:underline">
-                Review security settings →
+              <button
+                onClick={() => navigate('/settings')}
+                className="relative w-full text-center text-xs font-semibold text-white/80 bg-white/10 hover:bg-white/20 rounded-xl py-2.5 transition-all duration-300"
+              >
+                Review settings →
               </button>
             </div>
           </div>
         </div>
+
       </div>
     </BankShell>
   );
