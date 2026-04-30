@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from types import SimpleNamespace
-from app.core.database import get_db
+from app.core.database import SessionLocal, get_engine, get_db
 from app.core.config import get_settings
 from app.core.security import verify_password, get_password_hash, create_access_token, decode_token
 from app.models.models import User, Account
@@ -126,7 +126,7 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
     settings = get_settings()
     _check_rate_limit(_client_ip(request))
 
@@ -142,7 +142,11 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
             "expires_in": 1800,
         }
 
-    user = db.query(User).filter(User.email == form_data.username).first()
+    db = SessionLocal(bind=get_engine())
+    try:
+        user = db.query(User).filter(User.email == form_data.username).first()
+    finally:
+        db.close()
 
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
