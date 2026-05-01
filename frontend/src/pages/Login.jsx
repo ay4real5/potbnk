@@ -12,7 +12,8 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const sessionExpired = searchParams.get('expired') === '1';
   const [activeTab, setActiveTab] = useState(0);
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,15 +34,18 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    // Read directly from DOM so browser-autofilled values (which don't
-    // always trigger React onChange on mobile) are captured correctly.
+
+    // Keep controlled state, but read DOM as fallback for iOS autofill edge cases.
     const els = e.currentTarget.elements;
-    const emailVal = (els['login-email']?.value || form.email).trim().toLowerCase();
-    const passwordVal = els['login-password']?.value ?? form.password;
+    const emailVal = (els['login-email']?.value || email).trim().toLowerCase();
+    const passwordVal = (els['login-password']?.value ?? password).trim();
+    console.log({ email: emailVal, password: passwordVal });
+
     if (!emailVal || !emailVal.includes('@')) {
       setError('Please enter the email address used for your account.');
       return;
     }
+
     setLoading(true);
     try {
       await login(emailVal, passwordVal);
@@ -122,8 +126,8 @@ export default function Login() {
                     autoCorrect="off"
                     spellCheck={false}
                     inputMode="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="hnt-input pt-6 pb-2 pr-10"
                     placeholder="name@email.com"
                   />
@@ -151,8 +155,8 @@ export default function Login() {
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="hnt-input pt-6 pb-2 pr-10"
                     placeholder="••••••••"
                   />
