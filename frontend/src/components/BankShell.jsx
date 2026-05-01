@@ -52,7 +52,7 @@ export default function BankShell({ children, title }) {
       </div>
 
       {/* ── Main header ────────────────────────────────────────────────── */}
-      <header className="bg-[#063b36] border-b border-white/10 px-8 py-4 shrink-0">
+      <header className="bg-[#041f1c] border-b border-white/10 px-8 py-4 shrink-0">
         <div className="flex items-center justify-between max-w-screen-xl mx-auto">
 
           {/* Left: logo */}
@@ -92,7 +92,7 @@ export default function BankShell({ children, title }) {
             <button
               onClick={handleLogout}
               title="Sign out"
-              className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-xs font-bold hover:bg-white/20 transition-colors"
+              className="w-8 h-8 rounded-full bg-[#7CFC00] flex items-center justify-center text-[#041f1c] text-xs font-bold hover:brightness-110 transition-all"
             >
               {initials}
             </button>
@@ -132,7 +132,7 @@ export default function BankShell({ children, title }) {
       </header>
 
       {/* ── Page content ───────────────────────────────────────────────── */}
-      <main className="flex-1 bg-[#f4f6f4]">
+      <main className="flex-1 bg-[#f0f4f2]">
         {children}
       </main>
     </div>
