@@ -1,34 +1,27 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../api/client';
 import BankShell from '../components/BankShell';
-import { ArrowLeft, Search, Download, X, FileText } from 'lucide-react';
+import {
+  ArrowLeft, Search, Download, X, FileText,
+  PlusCircle, MinusCircle, ArrowLeftRight, Filter,
+} from 'lucide-react';
 
-const typeBadge = (type) => {
-  const base = 'text-xs font-semibold px-2.5 py-0.5 rounded-full';
-  if (type === 'DEPOSIT') return `${base} bg-emerald-100 text-emerald-700`;
-  if (type === 'WITHDRAWAL') return `${base} bg-red-100 text-red-700`;
-  return `${base} bg-blue-100 text-blue-700`;
-};
+const PAGE_SIZE = 10;
 
-const typeSign = (type) => {
-  if (type === 'DEPOSIT') return '+';
-  if (type === 'WITHDRAWAL') return '-';
-  return '';
-};
-
-const typeAmountClass = (type) => {
-  if (type === 'DEPOSIT') return 'text-emerald-600 font-bold text-base';
-  if (type === 'WITHDRAWAL') return 'text-red-600 font-bold text-base';
-  return 'text-bank-dark font-bold text-base';
-};
+function typeBadge(type) {
+  const base = 'inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide';
+  if (type === 'DEPOSIT')    return base + ' bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+  if (type === 'WITHDRAWAL') return base + ' bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+  return base + ' bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400';
+}
 
 function exportCSV(txs) {
   const header = ['Date', 'Type', 'Description', 'Amount (USD)'];
   const rows = txs.map((tx) => [
     new Date(tx.created_at).toLocaleString('en-US'),
     tx.type,
-    `"${(tx.description || '').replace(/"/g, '""')}"`,
+    '"' + (tx.description || '').replace(/"/g, '""') + '"',
     (tx.type === 'DEPOSIT' ? '+' : tx.type === 'WITHDRAWAL' ? '-' : '') +
       parseFloat(tx.amount).toFixed(2),
   ]);
@@ -37,195 +30,359 @@ function exportCSV(txs) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `hunch-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = 'hunch-transactions-' + new Date().toISOString().slice(0, 10) + '.csv';
   a.click();
   URL.revokeObjectURL(url);
 }
 
+function dateRangeFilter(tx, range) {
+  const d = new Date(tx.created_at);
+  const now = new Date();
+  if (range === 'month') {
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }
+  if (range === '3months') {
+    const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - 3);
+    return d >= cutoff;
+  }
+  if (range === 'year') {
+    return d.getFullYear() === now.getFullYear();
+  }
+  return true; // 'all'
+}
+
 export default function Transactions() {
   const { accountId } = useParams();
+
+  const [allAccounts, setAllAccounts] = useState([]);
+  const [selectedAccId, setSelectedAccId] = useState(accountId || '');
   const [account, setAccount] = useState(null);
   const [txs, setTxs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
-  const [typeFilter, setTypeFilter] = useState('');
-  const [searchText, setSearchText] = useState('');
+  const [typeFilter, setTypeFilter]   = useState('');
+  const [searchText, setSearchText]   = useState('');
+  const [dateFilter, setDateFilter]   = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const filtersActive = typeFilter !== '' || searchText.trim() !== '';
-
-  const buildUrl = useCallback((extraParams = '') => {
-    const base = accountId
-      ? `/accounts/${accountId}/transactions?limit=200`
-      : `/accounts/transactions?limit=200`;
+  const buildUrl = useCallback(() => {
+    const base = selectedAccId
+      ? '/accounts/' + selectedAccId + '/transactions?limit=500'
+      : '/accounts/transactions?limit=500';
     const params = [];
-    if (typeFilter) params.push(`tx_type=${typeFilter}`);
-    if (searchText.trim()) params.push(`q=${encodeURIComponent(searchText.trim())}`);
-    const qs = params.length ? `&${params.join('&')}` : '';
-    return base + qs + extraParams;
-  }, [accountId, typeFilter, searchText]);
+    if (typeFilter)           params.push('tx_type=' + typeFilter);
+    if (searchText.trim())    params.push('q=' + encodeURIComponent(searchText.trim()));
+    return base + (params.length ? '&' + params.join('&') : '');
+  }, [selectedAccId, typeFilter, searchText]);
 
+  // Load account list
   useEffect(() => {
-    if (accountId) {
-      api.get(`/accounts/${accountId}/balance`).then(({ data }) => setAccount(data)).catch(() => {});
-    }
-  }, [accountId]);
+    api.get('/accounts/').then(({ data }) => setAllAccounts(data)).catch(() => {});
+  }, []);
 
+  // Load account detail when viewing specific account
+  useEffect(() => {
+    if (selectedAccId) {
+      api.get('/accounts/' + selectedAccId + '/balance')
+        .then(({ data }) => setAccount(data))
+        .catch(() => {});
+    } else {
+      setAccount(null);
+    }
+  }, [selectedAccId]);
+
+  // Load transactions
   useEffect(() => {
     setLoading(true);
-    api.get(buildUrl()).then(({ data }) => {
-      setTxs(data);
-    }).finally(() => setLoading(false));
+    setCurrentPage(1);
+    api.get(buildUrl()).then(({ data }) => setTxs(data)).finally(() => setLoading(false));
   }, [buildUrl]);
+
+  // Client-side filters
+  const filtered = useMemo(() => {
+    return txs.filter((tx) => dateRangeFilter(tx, dateFilter));
+  }, [txs, dateFilter]);
+
+  // Stats from filtered set
+  const totalIn  = filtered.filter((t) => t.type === 'DEPOSIT').reduce((s, t) => s + parseFloat(t.amount), 0);
+  const totalOut = filtered.filter((t) => t.type !== 'DEPOSIT').reduce((s, t) => s + parseFloat(t.amount), 0);
+  const netChange = totalIn - totalOut;
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated  = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Running balance (single-account view only)
+  const withRunning = useMemo(() => {
+    if (!account) return paginated.map((tx) => ({ ...tx, runningBalance: null }));
+    const currentBal = parseFloat(account.available_balance ?? account.balance);
+    const sortedAll  = [...filtered].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    let running = currentBal;
+    const runMap = {};
+    for (const tx of sortedAll) {
+      runMap[tx.id] = running;
+      const amt = parseFloat(tx.amount);
+      if (tx.type === 'DEPOSIT')    running -= amt;
+      else if (tx.type === 'WITHDRAWAL') running += amt;
+    }
+    return paginated.map((tx) => ({ ...tx, runningBalance: runMap[tx.id] ?? null }));
+  }, [paginated, account, filtered]);
 
   const clearFilters = () => {
     setTypeFilter('');
     setSearchText('');
+    setDateFilter('all');
+    setCurrentPage(1);
   };
 
-  const pageTitle = accountId
-    ? (account ? `${account.account_type} · ${account.account_number}` : 'Transaction History')
+  const filtersActive = typeFilter !== '' || searchText.trim() !== '' || dateFilter !== 'all';
+  const pageTitle = account
+    ? account.account_type + ' · ' + account.account_number
     : 'All Transactions';
+
+  const TYPE_PILLS = [
+    { value: '',           label: 'All'         },
+    { value: 'DEPOSIT',    label: 'Deposits'    },
+    { value: 'WITHDRAWAL', label: 'Withdrawals' },
+    { value: 'TRANSFER',   label: 'Transfers'   },
+  ];
+
+  const DATE_PILLS = [
+    { value: 'month',   label: 'This Month'     },
+    { value: '3months', label: 'Last 3 Months'  },
+    { value: 'year',    label: 'This Year'      },
+    { value: 'all',     label: 'All Time'       },
+  ];
+
+  const pillCls = (active) =>
+    'px-3 py-1 rounded-full text-xs font-semibold transition-all ' +
+    (active
+      ? 'bg-[#063b36] text-white'
+      : 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50 hover:bg-slate-200 dark:hover:bg-white/15');
+
+  const TxIcon = ({ type }) => {
+    if (type === 'DEPOSIT')    return <PlusCircle  size={13} className="text-emerald-600" />;
+    if (type === 'WITHDRAWAL') return <MinusCircle size={13} className="text-red-500"     />;
+    return <ArrowLeftRight size={13} className="text-sky-600" />;
+  };
+
+  const amtCls = (type) => {
+    if (type === 'DEPOSIT')    return 'font-bold tabular-nums text-emerald-600';
+    if (type === 'WITHDRAWAL') return 'font-bold tabular-nums text-red-600';
+    return 'font-bold tabular-nums text-sky-600';
+  };
 
   return (
     <BankShell title="Transactions">
-      <div className="p-6 lg:p-8 max-w-5xl mx-auto">
-        <Link
-          to="/dashboard"
-          className="inline-flex items-center gap-1.5 text-gray-500 hover:text-bank-dark text-sm mb-6 transition-colors"
-        >
-          <ArrowLeft size={15} /> Back to dashboard
+      <div className="max-w-6xl mx-auto px-6 py-8">
+
+        {/* Back link */}
+        <Link to="/dashboard"
+          className="inline-flex items-center gap-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white text-sm mb-6 transition-colors">
+          <ArrowLeft size={14} /> Back to dashboard
         </Link>
 
-        {/* Account header */}
-        <div className="bg-white border border-gray-200 rounded-xl px-6 py-5 mb-4 shadow-sm overflow-hidden relative">
-          <div className="absolute right-0 top-0 bottom-0 w-1 bg-bank-dark rounded-r-xl" />
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-bold text-bank-dark">Transaction History</h1>
-              {accountId ? (
-                account ? (
-                  <div className="flex items-center gap-4 mt-1 flex-wrap">
-                    <span className="text-sm text-gray-600">
-                      {account.account_type} · {account.account_number}
-                    </span>
-                    <span className="text-sm font-semibold text-bank-dark">
-                      Balance: ${parseFloat(account.available_balance).toLocaleString('en-US', { minimumFractionDigits: 2 })} USD
-                    </span>
-                  </div>
-                ) : (
-                  <div className="h-4 w-48 bg-gray-200 rounded animate-pulse mt-2" />
-                )
-              ) : (
-                <p className="text-sm text-gray-500 mt-1">All accounts combined</p>
-              )}
-            </div>
-            {txs.length > 0 && (
-              <button
-                onClick={() => exportCSV(txs)}
-                className="shrink-0 flex items-center gap-1.5 text-xs font-semibold text-gray-500 border border-gray-200 px-3 py-2 rounded-lg hover:border-bank-dark hover:text-bank-dark transition-colors"
-              >
-                <Download size={13} /> Export CSV
-              </button>
+        {/* Header row */}
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Transaction History</h1>
+            {account && (
+              <p className="text-sm text-slate-400 mt-0.5">
+                {account.account_type} &middot; {account.account_number} &mdash; Balance: <span className="font-semibold text-slate-700 dark:text-white/70">${parseFloat(account.available_balance ?? account.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              </p>
             )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => exportCSV(filtered)}
+              disabled={filtered.length === 0}
+              className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-white/50 border border-slate-200 dark:border-white/10 px-3 py-2 rounded-xl hover:border-[#063b36] hover:text-[#063b36] dark:hover:text-[#7CFC00] transition-colors disabled:opacity-40"
+            >
+              <Download size={13} /> Export CSV
+            </button>
           </div>
         </div>
 
         {/* Filter bar */}
-        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 mb-5 shadow-sm flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          <div className="relative flex-1 w-full">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Search description…"
-              className="hnt-input pl-8 py-2 text-sm w-full"
-            />
-          </div>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="hnt-input py-2 text-sm w-full sm:w-44"
-          >
-            <option value="">All types</option>
-            <option value="DEPOSIT">Deposits</option>
-            <option value="WITHDRAWAL">Withdrawals</option>
-            <option value="TRANSFER">Transfers</option>
-          </select>
-          {filtersActive && (
-            <button
-              onClick={clearFilters}
-              className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition-colors shrink-0"
+        <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-4 mb-4 shadow-sm space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Account selector */}
+            <select
+              value={selectedAccId}
+              onChange={(e) => { setSelectedAccId(e.target.value); setCurrentPage(1); }}
+              className="border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm bg-white dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#063b36] sm:w-52"
             >
-              <X size={13} /> Clear
-            </button>
-          )}
+              <option value="">All Accounts</option>
+              {allAccounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.account_type.replace(/_/g, ' ')} &bull;&bull;&bull;&bull;{a.account_number.slice(-4)}
+                </option>
+              ))}
+            </select>
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchText}
+                onChange={(e) => { setSearchText(e.target.value); setCurrentPage(1); }}
+                placeholder="Search transactions…"
+                className="w-full border border-slate-200 dark:border-white/10 rounded-xl pl-8 pr-3 py-2 text-sm bg-white dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#063b36]"
+              />
+            </div>
+            {filtersActive && (
+              <button onClick={clearFilters}
+                className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-500 transition-colors shrink-0 px-2">
+                <X size={13} /> Clear
+              </button>
+            )}
+          </div>
+          {/* Type pills */}
+          <div className="flex gap-2 flex-wrap">
+            {TYPE_PILLS.map((p) => (
+              <button key={p.value} onClick={() => { setTypeFilter(p.value); setCurrentPage(1); }}
+                className={pillCls(typeFilter === p.value)}>
+                {p.label}
+              </button>
+            ))}
+            <div className="w-px bg-slate-200 dark:bg-white/10 mx-1" />
+            {DATE_PILLS.map((p) => (
+              <button key={p.value} onClick={() => { setDateFilter(p.value); setCurrentPage(1); }}
+                className={pillCls(dateFilter === p.value)}>
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Results count */}
-        {filtersActive && !loading && (
-          <p className="text-xs text-gray-400 mb-3 px-1">
-            {txs.length} result{txs.length !== 1 ? 's' : ''} found
-          </p>
-        )}
-
-        {/* Transaction list */}
-        {txs.length === 0 && !loading ? (
-          <div className="bg-white border border-gray-200 rounded-xl py-20 text-center shadow-sm">
-            <FileText size={36} className="text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-400 text-sm">{filtersActive ? 'No transactions match your filters.' : 'No transactions yet.'}</p>
+        {/* Summary stats */}
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-4 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total In</p>
+            <p className="text-xl font-bold text-emerald-600 tabular-nums">+${totalIn.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
           </div>
-        ) : (
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                  <th className="px-6 py-3 text-left">Date &amp; Time</th>
-                  <th className="px-6 py-3 text-left">Description</th>
-                  <th className="px-6 py-3 text-left">Type</th>
-                  <th className="px-6 py-3 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-            {txs.map((tx, i) => (
-              <tr
-                key={tx.id}
-                className="hover:bg-gray-50 transition-colors"
-              >
-                <td className="px-6 py-4 text-gray-400 text-xs whitespace-nowrap">
-                  {new Date(tx.created_at).toLocaleString('en-US', {
-                    month: 'short', day: 'numeric', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit',
-                  })}
-                </td>
-                <td className="px-6 py-4 font-medium text-bank-dark max-w-[200px] truncate">
-                  {tx.description || '—'}
-                </td>
-                <td className="px-6 py-4">
-                  <span className={typeBadge(tx.type)}>{tx.type}</span>
-                </td>
-                <td className={`px-6 py-4 font-bold text-right whitespace-nowrap ${typeAmountClass(tx.type)}`}>
-                  {typeSign(tx.type)}$
-                  {parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </td>
-              </tr>
-            ))}
-              </tbody>
-            </table>
+          <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-4 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Out</p>
+            <p className="text-xl font-bold text-red-600 tabular-nums">-${totalOut.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
           </div>
-        )}
+          <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-4 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Net Change</p>
+            <p className={'text-xl font-bold tabular-nums ' + (netChange >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+              {netChange >= 0 ? '+' : ''}{netChange.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+        </div>
 
-        {loading && (
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        {/* Table */}
+        {loading ? (
+          <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 overflow-hidden shadow-sm">
             {[0,1,2,3,4,5].map((i) => (
-              <div key={i} className="px-6 py-4 border-b border-gray-100 flex gap-4">
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 flex-1 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+              <div key={i} className="px-6 py-4 border-b border-slate-50 dark:border-white/5 flex gap-4">
+                <div className="h-4 w-24 bg-slate-200 dark:bg-white/10 rounded animate-pulse" />
+                <div className="h-4 flex-1 bg-slate-200 dark:bg-white/10 rounded animate-pulse" />
+                <div className="h-4 w-20 bg-slate-200 dark:bg-white/10 rounded animate-pulse" />
               </div>
             ))}
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 py-20 text-center shadow-sm">
+            <FileText size={36} className="text-slate-200 dark:text-white/10 mx-auto mb-3" />
+            <p className="text-slate-400 text-sm font-medium">No transactions found</p>
+            {filtersActive && <p className="text-xs text-slate-400 mt-1">Try clearing your filters</p>}
+          </div>
+        ) : (
+          <>
+            <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 overflow-hidden shadow-sm">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/10 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <th className="px-5 py-3 text-left">Date</th>
+                    <th className="px-5 py-3 text-left">Description</th>
+                    <th className="px-5 py-3 text-left hidden sm:table-cell">Account</th>
+                    <th className="px-5 py-3 text-center">Type</th>
+                    <th className="px-5 py-3 text-right">Amount</th>
+                    {account && <th className="px-5 py-3 text-right hidden md:table-cell">Balance</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50 dark:divide-white/5">
+                  {withRunning.map((tx, i) => {
+                    const rowBg = i % 2 === 0 ? '' : 'bg-slate-50/50 dark:bg-white/[0.02]';
+                    const sign = tx.type === 'DEPOSIT' ? '+' : '-';
+                    return (
+                      <tr key={tx.id}
+                        className={'transition-colors hover:bg-slate-100 dark:hover:bg-white/5 ' + rowBg}>
+                        <td className="px-5 py-3.5 text-slate-400 dark:text-white/40 text-xs whitespace-nowrap">
+                          {new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          <br />
+                          <span className="text-[10px]">{new Date(tx.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className={'w-7 h-7 rounded-full flex items-center justify-center shrink-0 ' + (tx.type === 'DEPOSIT' ? 'bg-emerald-50 dark:bg-emerald-900/20' : tx.type === 'WITHDRAWAL' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-sky-50 dark:bg-sky-900/20')}>
+                              <TxIcon type={tx.type} />
+                            </div>
+                            <span className="font-medium text-slate-700 dark:text-white/70 truncate max-w-[160px]">
+                              {tx.description || tx.type}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 text-slate-400 dark:text-white/40 text-xs hidden sm:table-cell">
+                          {tx.account_number ? '••••' + tx.account_number.slice(-4) : '—'}
+                        </td>
+                        <td className="px-5 py-3.5 text-center">
+                          <span className={typeBadge(tx.type)}>{tx.type}</span>
+                        </td>
+                        <td className={'px-5 py-3.5 text-right whitespace-nowrap ' + amtCls(tx.type)}>
+                          {sign}${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </td>
+                        {account && (
+                          <td className="px-5 py-3.5 text-right text-xs text-slate-500 dark:text-white/40 hidden md:table-cell whitespace-nowrap">
+                            {tx.runningBalance !== null
+                              ? '$' + tx.runningBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })
+                              : '—'}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
+              <p className="text-xs text-slate-400">
+                Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} transactions
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-[#063b36] hover:text-[#063b36] dark:hover:text-[#7CFC00] disabled:opacity-40 transition-colors"
+                >
+                  ← Prev
+                </button>
+                {[...Array(Math.min(5, totalPages))].map((_, idx) => {
+                  const page = idx + 1;
+                  return (
+                    <button key={page} onClick={() => setCurrentPage(page)}
+                      className={'px-3 py-1.5 text-xs font-semibold rounded-xl transition-colors ' + (currentPage === page ? 'bg-[#063b36] text-white' : 'border border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-[#063b36]')}>
+                      {page}
+                    </button>
+                  );
+                })}
+                {totalPages > 5 && <span className="text-slate-400 text-xs self-center">…</span>}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-[#063b36] hover:text-[#063b36] dark:hover:text-[#7CFC00] disabled:opacity-40 transition-colors"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </BankShell>
