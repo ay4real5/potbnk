@@ -17,6 +17,19 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const handleDemoLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await login('demo@potbnk.app', 'DemoLogin#2026!');
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Demo login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -160,6 +173,22 @@ export default function Login() {
                 >
                   <Lock size={15} />
                   {loading ? 'Signing in…' : 'Log In'}
+                </button>
+
+                <div className="relative flex items-center gap-2 my-1">
+                  <div className="flex-1 border-t border-gray-200" />
+                  <span className="text-[11px] text-gray-400 font-medium shrink-0">or</span>
+                  <div className="flex-1 border-t border-gray-200" />
+                </div>
+
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={handleDemoLogin}
+                  className="w-full py-2.5 rounded-lg border-2 border-bank-teal text-bank-teal text-sm font-semibold hover:bg-bank-teal hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Signing in…' : 'Try Demo Account'}
+                </button>
                 </button>
               </form>
 
