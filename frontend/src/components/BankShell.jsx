@@ -1,18 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import {
-  LayoutDashboard, ArrowLeftRight, PlusCircle, MinusCircle,
-  ClipboardList, Settings, LogOut, Bell, Menu, X, ChevronRight,
-} from 'lucide-react';
+import { Bell, Menu, X } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: 'Dashboard',    href: '/dashboard' },
-  { icon: ArrowLeftRight,  label: 'Transfer',     href: '/transfer' },
-  { icon: PlusCircle,      label: 'Deposit',      href: '/deposit' },
-  { icon: MinusCircle,     label: 'Withdraw',     href: '/withdraw' },
-  { icon: ClipboardList,   label: 'Transactions', href: '/transactions' },
-  { icon: Settings,        label: 'Settings',     href: '/settings' },
+  { label: 'Dashboard',    href: '/dashboard' },
+  { label: 'Transfer',     href: '/transfer' },
+  { label: 'Deposit',      href: '/deposit' },
+  { label: 'Withdraw',     href: '/withdraw' },
+  { label: 'Transactions', href: '/transactions' },
+  { label: 'Settings',     href: '/settings' },
 ];
 
 function LogoMark() {
@@ -45,103 +42,99 @@ export default function BankShell({ children, title }) {
   });
 
   return (
-    <div className="min-h-screen flex bg-[#f0f4f3]">
+    <div className="min-h-screen flex flex-col">
 
-      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-bank-dark flex flex-col
-        transition-transform duration-200 ease-in-out
-        ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0
-      `}>
-        {/* Logo */}
-        <div className="h-16 flex items-center gap-3 px-6 border-b border-white/10 shrink-0">
-          <LogoMark />
-          <span className="text-white font-bold text-xl tracking-tight">Hunch.</span>
-          <button className="ml-auto lg:hidden text-white/50 hover:text-white" onClick={() => setMobileOpen(false)}>
-            <X size={18} />
-          </button>
-        </div>
+      {/* ── FDIC strip ─────────────────────────────────────────────────── */}
+      <div className="w-full bg-[#041f1c] text-center py-1 px-8">
+        <span className="text-[10px] text-white/50 tracking-wide">
+          FDIC-Insured — Backed by the full faith and credit of the U.S. Government
+        </span>
+      </div>
 
-        {/* User info */}
-        <div className="px-5 py-4 border-b border-white/10 shrink-0">
+      {/* ── Main header ────────────────────────────────────────────────── */}
+      <header className="bg-[#063b36] border-b border-white/10 px-8 py-4 shrink-0">
+        <div className="flex items-center justify-between max-w-screen-xl mx-auto">
+
+          {/* Left: logo */}
+          <Link to="/dashboard" className="flex items-center gap-2.5 shrink-0">
+            <LogoMark />
+            <span className="text-white font-bold text-xl tracking-tight">Hunch.</span>
+          </Link>
+
+          {/* Center: nav links (desktop) */}
+          <nav className="hidden md:flex items-center gap-1">
+            {NAV_ITEMS.map(({ label, href }) => {
+              const active =
+                location.pathname === href ||
+                (href === '/transactions' && location.pathname.startsWith('/transactions'));
+              return (
+                <Link
+                  key={href}
+                  to={href}
+                  className={`text-sm font-medium px-3 py-1 rounded-full transition-all ${
+                    active
+                      ? 'bg-white/15 text-white'
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Right: date + bell + avatar + mobile hamburger */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-xs font-bold shrink-0">
-              {initials}
-            </div>
-            <div className="min-w-0">
-              <p className="text-white text-sm font-semibold truncate">{user?.full_name ?? 'User'}</p>
-              <p className="text-white/40 text-xs truncate">{user?.email ?? ''}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 py-5 px-3 flex flex-col gap-0.5 overflow-y-auto">
-          {NAV_ITEMS.map(({ icon: Icon, label, href }) => {
-            const active =
-              location.pathname === href ||
-              (href === '/transactions' && location.pathname.startsWith('/transactions'));
-            return (
-              <Link
-                key={href}
-                to={href}
-                onClick={() => setMobileOpen(false)}
-                className={`
-                  flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all
-                  ${active ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white hover:bg-white/5'}
-                `}
-              >
-                <Icon size={17} className={active ? 'text-bank-accent' : 'text-white/40'} />
-                {label}
-                {active && <ChevronRight size={13} className="ml-auto text-bank-accent/70" />}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Sign out */}
-        <div className="p-4 border-t border-white/10 shrink-0">
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-lg text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-all"
-          >
-            <LogOut size={16} />
-            Sign out
-          </button>
-        </div>
-      </aside>
-
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />
-      )}
-
-      {/* ── Main ────────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center gap-4 px-6 shrink-0 shadow-sm">
-          <button className="lg:hidden text-gray-500 hover:text-bank-dark" onClick={() => setMobileOpen(true)}>
-            <Menu size={20} />
-          </button>
-          <h1 className="text-[15px] font-bold text-bank-dark flex-1">{title}</h1>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-400 hidden sm:block">{today}</span>
-            <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+            <span className="text-xs text-white/50 hidden sm:block">{today}</span>
+            <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors">
               <Bell size={17} />
             </button>
             <button
               onClick={handleLogout}
               title="Sign out"
-              className="w-8 h-8 rounded-full bg-bank-dark flex items-center justify-center text-white text-xs font-bold hover:bg-bank-mid transition-colors"
+              className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-xs font-bold hover:bg-white/20 transition-colors"
             >
               {initials}
             </button>
+            <button
+              className="md:hidden w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+              onClick={() => setMobileOpen((o) => !o)}
+            >
+              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
           </div>
-        </header>
+        </div>
 
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
-      </div>
+        {/* Mobile nav dropdown */}
+        {mobileOpen && (
+          <nav className="md:hidden mt-3 flex flex-col gap-1 border-t border-white/10 pt-3 pb-2">
+            {NAV_ITEMS.map(({ label, href }) => {
+              const active =
+                location.pathname === href ||
+                (href === '/transactions' && location.pathname.startsWith('/transactions'));
+              return (
+                <Link
+                  key={href}
+                  to={href}
+                  onClick={() => setMobileOpen(false)}
+                  className={`text-sm font-medium px-4 py-2 rounded-lg transition-all ${
+                    active
+                      ? 'bg-white/15 text-white'
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
+      </header>
+
+      {/* ── Page content ───────────────────────────────────────────────── */}
+      <main className="flex-1 bg-[#f4f6f4]">
+        {children}
+      </main>
     </div>
   );
 }

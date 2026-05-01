@@ -16,41 +16,6 @@ const typeSign = (type, accountIds, tx) => {
   return accountIds.has(tx.sender_id) ? '-' : '+';
 };
 
-const CARD_GRADIENTS = [
-  'from-[#012d2a] to-[#024f54]',
-  'from-[#1a3a4a] to-[#0d5e6a]',
-  'from-[#1e3a5f] to-[#2d5986]',
-  'from-[#2d1b4e] to-[#4a2b8a]',
-];
-
-// SVG sparkline derived from transaction amounts
-function Sparkline({ values }) {
-  if (!values || values.length < 2) {
-    return <div className="h-12 rounded-xl bg-white/5" />;
-  }
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const W = 200, H = 48;
-  const pts = values.map((v, i) => {
-    const x = (i / (values.length - 1)) * W;
-    const y = H - ((v - min) / range) * H * 0.8 - H * 0.1;
-    return x.toFixed(1) + ',' + y.toFixed(1);
-  });
-  return (
-    <svg viewBox={'0 0 ' + W + ' ' + H} preserveAspectRatio="none" className="w-full h-12 opacity-70">
-      <polyline
-        points={pts.join(' ')}
-        fill="none"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
@@ -84,9 +49,6 @@ export default function Dashboard() {
 
   const totalBalance = accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0);
   const myAccountIds = new Set(accounts.map((a) => a.id));
-  const sparkValues = recentTx.length > 1
-    ? recentTx.map((tx) => parseFloat(tx.amount)).reverse()
-    : [1, 2.5, 1.8, 3.2, 2.8, 4.1, 3.6];
 
   const handleOpenAccount = async () => {
     setOpenAcctError('');
@@ -115,17 +77,20 @@ export default function Dashboard() {
   if (loading) {
     return (
       <BankShell title="Dashboard">
-        <div className="p-6 lg:p-10 max-w-5xl mx-auto space-y-8">
-          <div className="h-52 bg-slate-200 rounded-3xl animate-pulse" />
-          <div className="grid grid-cols-4 gap-3">
-            {[0, 1, 2, 3].map((i) => <div key={i} className="h-20 bg-slate-200 rounded-2xl animate-pulse" />)}
+        <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+          <div className="h-48 bg-slate-300 rounded-2xl animate-pulse" />
+          <div className="flex gap-3">
+            {[0, 1, 2, 3].map((i) => <div key={i} className="h-10 flex-1 bg-slate-200 rounded-full animate-pulse" />)}
           </div>
-          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {[0, 1, 2].map((i) => <div key={i} className="h-44 bg-slate-200 rounded-3xl animate-pulse" />)}
-          </div>
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 h-64 bg-slate-200 rounded-3xl animate-pulse" />
-            <div className="h-64 bg-slate-200 rounded-3xl animate-pulse" />
+          <div className="grid grid-cols-3 gap-6">
+            <div className="col-span-2 space-y-4">
+              <div className="h-28 bg-slate-200 rounded-2xl animate-pulse" />
+              <div className="h-52 bg-slate-200 rounded-2xl animate-pulse" />
+            </div>
+            <div className="space-y-4">
+              <div className="h-36 bg-slate-200 rounded-2xl animate-pulse" />
+              <div className="h-36 bg-slate-200 rounded-2xl animate-pulse" />
+            </div>
           </div>
         </div>
       </BankShell>
@@ -135,201 +100,201 @@ export default function Dashboard() {
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <BankShell title="Dashboard">
-      <div className="p-6 lg:p-10 max-w-5xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto px-6 py-8">
 
-        {/* ── Hero balance card ──────────────────────────────────────────── */}
-        <div className="relative bg-gradient-to-br from-emerald-950 via-[#012d2a] to-[#024f54] rounded-3xl p-8 lg:p-10 text-white border border-white/10 shadow-xl overflow-hidden">
-          <div className="pointer-events-none absolute -top-20 -right-20 w-72 h-72 rounded-full bg-emerald-400/10 blur-3xl" />
-          <div className="pointer-events-none absolute bottom-0 left-1/3 w-56 h-56 rounded-full bg-teal-500/10 blur-2xl" />
-
-          <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-8">
-            <div>
-              <p className="text-slate-400 text-sm font-medium mb-1">
-                {greeting()}, {user?.full_name?.split(' ')[0] ?? 'there'}
-              </p>
-              <p className="text-slate-500 text-[11px] uppercase tracking-widest font-semibold mb-3">
-                Total Balance · USD
-              </p>
-              <p className="text-5xl font-extrabold tracking-tight leading-none tabular-nums">
-                ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </p>
-              <p className="text-slate-500 text-xs mt-3">
-                Across {accounts.length} account{accounts.length !== 1 ? 's' : ''}
-              </p>
-            </div>
-
-            <div className="sm:w-40 shrink-0">
-              <p className="text-slate-500 text-[10px] uppercase tracking-widest mb-2">Activity trend</p>
-              <Sparkline values={sparkValues} />
-              <p className="text-slate-600 text-[10px] mt-1 text-right">Last {sparkValues.length} transactions</p>
-            </div>
+        {/* ── Hero card ────────────────────────────────────────────────── */}
+        <div className="bg-[#063b36] rounded-2xl p-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-white/60 mb-1">
+              {greeting()}, {user?.full_name?.split(' ')[0] ?? 'there'}
+            </p>
+            <p className="font-serif text-3xl font-bold text-white mb-5">Welcome back</p>
+            <p className="text-xs font-medium text-white/50 uppercase tracking-widest mb-1">Total Balance</p>
+            <p className="text-4xl font-bold text-white tabular-nums">
+              ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </p>
+            <p className="text-sm text-white/40 mt-2">
+              Across {accounts.length} account{accounts.length !== 1 ? 's' : ''} · USD
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => navigate('/deposit')}
+              className="bg-[#84cc16] text-[#041f1c] text-sm font-bold px-5 py-2 rounded-full hover:bg-[#a3e635] transition-colors"
+            >
+              + Deposit
+            </button>
+            <button
+              onClick={() => navigate('/transfer')}
+              className="border border-white/40 text-white text-sm font-bold px-5 py-2 rounded-full hover:bg-white/10 transition-colors"
+            >
+              ↔ Transfer
+            </button>
           </div>
         </div>
 
-        {/* ── Quick action grid ──────────────────────────────────────────── */}
-        <div className="grid grid-cols-4 gap-3">
+        {/* ── Quick actions row ─────────────────────────────────────────── */}
+        <div className="flex flex-wrap gap-3 mt-6">
           {[
-            { icon: ArrowLeftRight, label: 'Transfer', href: '/transfer',  iconCls: 'bg-sky-50 text-sky-600 ring-sky-100'           },
-            { icon: PlusCircle,     label: 'Deposit',  href: '/deposit',   iconCls: 'bg-emerald-50 text-emerald-600 ring-emerald-100' },
-            { icon: MinusCircle,    label: 'Withdraw', href: '/withdraw',  iconCls: 'bg-rose-50 text-rose-500 ring-rose-100'          },
-            { icon: Settings,       label: 'Settings', href: '/settings',  iconCls: 'bg-violet-50 text-violet-500 ring-violet-100'    },
-          ].map(({ icon: Icon, label, href, iconCls }) => (
+            { label: 'Transfer', href: '/transfer'  },
+            { label: 'Deposit',  href: '/deposit'   },
+            { label: 'Withdraw', href: '/withdraw'  },
+            { label: 'Settings', href: '/settings'  },
+          ].map(({ label, href }) => (
             <button
               key={href}
               onClick={() => navigate(href)}
-              className="flex flex-col items-center gap-2.5 bg-white rounded-2xl py-5 px-2 shadow-sm border border-slate-100 transition-all duration-300 hover:scale-[1.04] hover:shadow-md group"
+              className="bg-white border border-slate-200 rounded-full px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-[#063b36] hover:text-white hover:border-[#063b36] transition-all duration-300"
             >
-              <div className={`w-11 h-11 rounded-full flex items-center justify-center ring-4 ${iconCls} transition-all duration-300 group-hover:ring-8`}>
-                <Icon size={17} />
-              </div>
-              <span className="text-xs font-semibold text-slate-500 group-hover:text-slate-800 transition-colors">{label}</span>
+              {label}
             </button>
           ))}
         </div>
 
-        {/* ── Account cards ──────────────────────────────────────────────── */}
-        <div>
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">My Accounts</h3>
-            {!showOpenAcct && (
-              <button
-                onClick={() => { setShowOpenAcct(true); setOpenAcctSuccess(''); setOpenAcctError(''); }}
-                className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-800 transition-colors"
-              >
-                <Plus size={13} /> Open Account
-              </button>
-            )}
-          </div>
+        {/* ── Two-column grid ───────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
 
-          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {accounts.map((acc, idx) => (
-              <div
-                key={acc.id}
-                className={`bg-gradient-to-br ${CARD_GRADIENTS[idx % CARD_GRADIENTS.length]} rounded-3xl p-6 text-white border border-white/10 shadow-sm relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-xl`}
-              >
-                <div className="pointer-events-none absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/5" />
-                <div className="pointer-events-none absolute right-8 top-24 w-24 h-24 rounded-full bg-white/5" />
-                <div className="flex items-start justify-between mb-7 relative">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">
-                    {acc.account_type.replace(/_/g, ' ')}
-                  </span>
-                  <div className="w-8 h-5 rounded bg-yellow-400/70" />
-                </div>
-                <p className="text-3xl font-extrabold tracking-tight mb-1 relative tabular-nums">
-                  ${parseFloat(acc.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </p>
-                <p className="text-white/40 text-xs mb-7 relative">Available · USD</p>
-                <div className="flex items-center justify-between relative">
-                  <span className="text-white/40 text-xs font-mono tracking-widest">{acc.account_number}</span>
-                  <Link
-                    to={`/transactions/${acc.id}`}
-                    className="flex items-center gap-1 text-xs font-semibold text-white/60 hover:text-white transition-colors"
-                  >
-                    History <ChevronRight size={12} />
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* Left: accounts + activity */}
+          <div className="lg:col-span-2 space-y-6">
 
-          {showOpenAcct && (
-            <div className="mt-5 bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-slate-800 text-sm">Open a new account</h3>
-                <button
-                  onClick={() => { setShowOpenAcct(false); setOpenAcctSuccess(''); setOpenAcctError(''); }}
-                  className="text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              {openAcctSuccess ? (
-                <div className="text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm">{openAcctSuccess}</div>
-              ) : (
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <select value={openAcctType} onChange={(e) => setOpenAcctType(e.target.value)} className="hnt-input flex-1">
-                    <option value="CHECKING">Checking</option>
-                    <option value="SAVINGS">Savings</option>
-                    <option value="BUSINESS_CHECKING">Business Checking</option>
-                    <option value="MONEY_MARKET">Money Market</option>
-                  </select>
+            {/* My Accounts */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">My Accounts</h3>
+                {!showOpenAcct && (
                   <button
-                    onClick={handleOpenAccount}
-                    disabled={openAcctLoading}
-                    className="bg-bank-dark text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-bank-teal transition-all duration-300 disabled:opacity-50"
+                    onClick={() => { setShowOpenAcct(true); setOpenAcctSuccess(''); setOpenAcctError(''); }}
+                    className="flex items-center gap-1 text-xs font-semibold text-[#16a34a] hover:text-[#15803d] transition-colors"
                   >
-                    {openAcctLoading ? 'Opening…' : 'Confirm'}
+                    <Plus size={12} /> Open Account
                   </button>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                {accounts.map((acc) => (
+                  <div key={acc.id} className="bg-white rounded-2xl border border-slate-200 p-5 flex justify-between items-center">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">
+                        {acc.account_type.replace(/_/g, ' ')}
+                      </p>
+                      <p className="text-sm font-mono text-slate-600">
+                        ••••{acc.account_number.slice(-4)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-[#063b36] tabular-nums">
+                        ${parseFloat(acc.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </p>
+                      <Link
+                        to={`/transactions/${acc.id}`}
+                        className="text-xs font-semibold text-[#16a34a] hover:text-[#15803d] transition-colors"
+                      >
+                        View details →
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Open account form */}
+              {showOpenAcct && (
+                <div className="mt-3 bg-white border border-slate-200 rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-slate-800 text-sm">Open a new account</h3>
+                    <button
+                      onClick={() => { setShowOpenAcct(false); setOpenAcctSuccess(''); setOpenAcctError(''); }}
+                      className="text-slate-400 hover:text-slate-600 transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  {openAcctSuccess ? (
+                    <div className="text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm">{openAcctSuccess}</div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <select
+                        value={openAcctType}
+                        onChange={(e) => setOpenAcctType(e.target.value)}
+                        className="hnt-input flex-1"
+                      >
+                        <option value="CHECKING">Checking</option>
+                        <option value="SAVINGS">Savings</option>
+                        <option value="BUSINESS_CHECKING">Business Checking</option>
+                        <option value="MONEY_MARKET">Money Market</option>
+                      </select>
+                      <button
+                        onClick={handleOpenAccount}
+                        disabled={openAcctLoading}
+                        className="bg-[#063b36] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#041f1c] transition-all duration-300 disabled:opacity-50"
+                      >
+                        {openAcctLoading ? 'Opening…' : 'Confirm'}
+                      </button>
+                    </div>
+                  )}
+                  {openAcctError && <p className="mt-2 text-xs text-red-600">{openAcctError}</p>}
                 </div>
               )}
-              {openAcctError && <p className="mt-2 text-xs text-red-600">{openAcctError}</p>}
-            </div>
-          )}
-        </div>
-
-        {/* ── Recent activity + sidebar ──────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* Activity feed */}
-          <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 text-sm">Recent Activity</h3>
-              <Link
-                to="/transactions"
-                className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 transition-colors flex items-center gap-1"
-              >
-                View all <ChevronRight size={12} />
-              </Link>
             </div>
 
-            {recentTx.length === 0 ? (
-              <div className="py-16 text-center">
-                <p className="text-slate-400 text-sm">No transactions yet.</p>
+            {/* Recent Activity */}
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <h3 className="font-bold text-slate-800 text-sm">Recent Activity</h3>
+                <Link
+                  to="/transactions"
+                  className="text-xs font-semibold text-[#16a34a] hover:text-[#15803d] transition-colors"
+                >
+                  View all →
+                </Link>
               </div>
-            ) : (
-              <ul className="divide-y divide-slate-50">
-                {recentTx.map((tx) => {
-                  const isDeposit    = tx.type === 'DEPOSIT';
-                  const isWithdrawal = tx.type === 'WITHDRAWAL';
-                  const sign         = typeSign(tx.type, myAccountIds, tx);
-                  const amountColor  = isDeposit ? 'text-emerald-600' : isWithdrawal ? 'text-slate-800' : 'text-sky-600';
-                  const iconCls      = isDeposit
-                    ? 'bg-emerald-50 text-emerald-500'
-                    : isWithdrawal
-                    ? 'bg-rose-50 text-rose-500'
-                    : 'bg-sky-50 text-sky-500';
-                  const TxIcon = isDeposit ? PlusCircle : isWithdrawal ? MinusCircle : ArrowLeftRight;
-                  return (
-                    <li key={tx.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconCls}`}>
-                        <TxIcon size={15} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-700 truncate">
-                          {tx.description || tx.type}
+              {recentTx.length === 0 ? (
+                <div className="py-14 text-center">
+                  <p className="text-slate-400 text-sm">No transactions yet.</p>
+                </div>
+              ) : (
+                <ul>
+                  {recentTx.map((tx) => {
+                    const isDeposit    = tx.type === 'DEPOSIT';
+                    const isWithdrawal = tx.type === 'WITHDRAWAL';
+                    const sign         = typeSign(tx.type, myAccountIds, tx);
+                    const amountCls    = isDeposit ? 'text-emerald-600' : 'text-slate-800';
+                    const iconBg       = isDeposit
+                      ? 'bg-emerald-50 text-emerald-500'
+                      : isWithdrawal
+                      ? 'bg-rose-50 text-rose-500'
+                      : 'bg-sky-50 text-sky-500';
+                    const TxIcon = isDeposit ? PlusCircle : isWithdrawal ? MinusCircle : ArrowLeftRight;
+                    return (
+                      <li key={tx.id} className="flex justify-between items-center px-5 py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${iconBg}`}>
+                            <TxIcon size={14} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-700">{tx.description || tx.type}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                        <p className={`text-sm font-bold tabular-nums ${amountCls}`}>
+                          {sign}${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </p>
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          {new Date(tx.created_at).toLocaleDateString('en-US', {
-                            month: 'short', day: 'numeric', year: 'numeric',
-                          })}
-                        </p>
-                      </div>
-                      <p className={`text-sm font-bold tabular-nums shrink-0 ${amountColor}`}>
-                        {sign}${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                      </p>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
           </div>
 
-          {/* Right sidebar */}
+          {/* Right: summary + security */}
           <div className="flex flex-col gap-4">
 
-            {/* Summary */}
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-5">Summary</h3>
+            {/* Summary card */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-5">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Summary</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-500">Active accounts</span>
@@ -341,35 +306,33 @@ export default function Dashboard() {
                 </div>
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                   <span className="text-sm text-slate-500">Total balance</span>
-                  <span className="text-sm font-bold text-emerald-600 tabular-nums">
+                  <span className="text-sm font-bold text-[#063b36] tabular-nums">
                     ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Security */}
-            <div className="relative bg-gradient-to-br from-emerald-950 to-[#024f54] rounded-3xl p-6 text-white border border-white/10 shadow-sm overflow-hidden">
-              <div className="pointer-events-none absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/5" />
-              <div className="flex items-center gap-2.5 mb-3 relative">
+            {/* Security card */}
+            <div className="bg-[#063b36] rounded-2xl p-5 text-white">
+              <div className="flex items-center gap-2.5 mb-3">
                 <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                  <ShieldCheck size={14} className="text-emerald-400" />
+                  <ShieldCheck size={15} className="text-[#84cc16]" />
                 </div>
-                <p className="text-xs font-bold uppercase tracking-widest text-emerald-400">Security</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#84cc16]">Security</p>
               </div>
-              <p className="text-sm text-white/60 leading-relaxed mb-5 relative">
+              <p className="text-sm text-white/60 leading-relaxed mb-5">
                 256-bit encryption and 24/7 monitoring keep your funds safe.
               </p>
               <button
                 onClick={() => navigate('/settings')}
-                className="relative w-full text-center text-xs font-semibold text-white/80 bg-white/10 hover:bg-white/20 rounded-xl py-2.5 transition-all duration-300"
+                className="w-full text-center text-xs font-semibold text-white/80 bg-white/10 hover:bg-white/20 rounded-xl py-2.5 transition-all duration-300"
               >
                 Review settings →
               </button>
             </div>
           </div>
         </div>
-
       </div>
     </BankShell>
   );
