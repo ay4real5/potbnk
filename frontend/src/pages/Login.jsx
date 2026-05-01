@@ -189,7 +189,6 @@ export default function Login() {
                 >
                   {loading ? 'Signing in…' : 'Try Demo Account'}
                 </button>
-                </button>
               </form>
 
               {/* Forgot links */}
