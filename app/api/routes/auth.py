@@ -22,6 +22,10 @@ _login_attempts: dict = defaultdict(list)
 _RATE_WINDOW = 60   # seconds
 _RATE_MAX    = 10   # attempts per window
 
+
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
+
 def _check_rate_limit(ip: str):
     now = time.monotonic()
     attempts = _login_attempts[ip]
@@ -86,8 +90,10 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
 @router.post("/register", status_code=201)
 def register(payload: UserRegister, db: Session = Depends(get_db)):
+    normalized_email = _normalize_email(payload.email)
+
     # Check if email already exists
-    existing = db.query(User).filter(User.email == payload.email).first()
+    existing = db.query(User).filter(User.email == normalized_email).first()
     if existing:
         raise HTTPException(status_code=400, detail="An account with this email already exists.")
 
@@ -95,7 +101,7 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
     new_user = User(
         id=uuid.uuid4(),
         full_name=payload.full_name,
-        email=payload.email,
+        email=normalized_email,
         hashed_password=get_password_hash(payload.password)
     )
     db.add(new_user)
@@ -137,10 +143,11 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
 def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
     settings = get_settings()
     _check_rate_limit(_client_ip(request))
+    normalized_email = _normalize_email(form_data.username)
 
     if (
         settings.demo_login_enabled
-        and form_data.username.lower() == settings.demo_login_email.lower()
+        and normalized_email == _normalize_email(settings.demo_login_email)
         and form_data.password == settings.demo_login_password
     ):
         token = create_access_token(data={"sub": settings.demo_login_user_id})
@@ -152,7 +159,7 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
 
     db = SessionLocal(bind=get_engine())
     try:
-        user = db.query(User).filter(User.email == form_data.username).first()
+        user = db.query(User).filter(User.email == normalized_email).first()
     finally:
         db.close()
 

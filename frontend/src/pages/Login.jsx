@@ -22,7 +22,7 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await login(form.email, form.password);
+      await login(form.email.trim().toLowerCase(), form.password);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed. Please try again.');
@@ -96,6 +96,10 @@ export default function Login() {
                     type="email"
                     required
                     autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    inputMode="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="hnt-input pt-6 pb-2 pr-10"
@@ -122,6 +126,9 @@ export default function Login() {
                     type={showPassword ? 'text' : 'password'}
                     required
                     autoComplete="current-password"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     className="hnt-input pt-6 pb-2 pr-10"
