@@ -1,12 +1,13 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import api from '../api/client';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { clearAuthToken, getAuthToken, setAuthToken } from '../lib/authToken';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [token, setToken] = useState(() => getAuthToken());
 
   const login = useCallback(async (email, password) => {
     const params = new URLSearchParams();
@@ -15,15 +16,17 @@ export function AuthProvider({ children }) {
     const { data } = await api.post('/auth/login', params, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
-    localStorage.setItem('token', data.access_token);
+    setAuthToken(data.access_token);
     setToken(data.access_token);
-    const { data: me } = await api.get('/auth/me');
+    const { data: me } = await api.get('/auth/me', {
+      headers: { Authorization: `Bearer ${data.access_token}` },
+    });
     setUser(me);
     return me;
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('token');
+    clearAuthToken();
     setToken(null);
     setUser(null);
   }, []);

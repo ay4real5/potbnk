@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearAuthToken, getAuthToken } from '../lib/authToken';
 
 const api = axios.create({
   baseURL:
@@ -10,7 +11,7 @@ const api = axios.create({
 
 // Attach JWT on every request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = getAuthToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -23,7 +24,7 @@ api.interceptors.response.use(
       // Don't redirect on login/register requests themselves
       const url = err.config?.url || '';
       if (!url.includes('/auth/login') && !url.includes('/auth/register')) {
-        localStorage.removeItem('token');
+        clearAuthToken();
         window.location.href = '/login?expired=1';
       }
     }

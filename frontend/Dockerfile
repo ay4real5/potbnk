@@ -8,8 +8,9 @@ RUN npm ci
 
 COPY . .
 
-# Allow runtime config to be injected at build time
-ARG VITE_API_URL=http://localhost:8000
+# Allow runtime config to be injected at build time.
+# Default to same-origin /api so it works across desktop and mobile.
+ARG VITE_API_URL=/api
 ARG VITE_SUPABASE_URL=
 ARG VITE_SUPABASE_PUBLISHABLE_KEY=
 ENV VITE_API_URL=$VITE_API_URL
