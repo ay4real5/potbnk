@@ -65,7 +65,7 @@ export default function Deposit() {
 
   return (
     <BankShell title="Deposit Funds">
-      <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Deposit Funds</h1>
           <p className="text-slate-400 mt-1">Add money to your account</p>
@@ -74,7 +74,7 @@ export default function Deposit() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
           {/* Amount card */}
-          <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm p-8">
+          <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm p-6 sm:p-8">
             <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 text-center">Amount</label>
 
             <div className="flex items-center justify-center mb-2">

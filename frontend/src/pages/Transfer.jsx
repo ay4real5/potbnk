@@ -81,7 +81,7 @@ export default function Transfer() {
 
   return (
     <BankShell title="Send Money">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Send Money</h1>
           <p className="text-slate-400 text-sm mt-1">Transfer between your accounts instantly</p>

@@ -98,7 +98,7 @@ export default function BankShell({ children, title }) {
         </span>
       </div>
 
-      <header className="bg-[#041f1c] border-b border-white/10 px-8 py-4 shrink-0">
+      <header className="bg-[#041f1c] border-b border-white/10 px-4 sm:px-8 py-4 shrink-0">
         <div className="flex items-center justify-between max-w-screen-xl mx-auto">
 
           <Link to="/dashboard" className="flex items-center gap-2.5 shrink-0">
@@ -147,7 +147,7 @@ export default function BankShell({ children, title }) {
                 )}
               </button>
               {bellOpen && (
-                <div className="absolute right-0 top-11 z-50 w-80 bg-white dark:bg-[#111a18] rounded-2xl shadow-xl border border-slate-100 dark:border-white/10 overflow-hidden">
+                <div className="absolute right-0 top-11 z-50 w-[calc(100vw-2rem)] max-w-xs sm:w-80 bg-white dark:bg-[#111a18] rounded-2xl shadow-xl border border-slate-100 dark:border-white/10 overflow-hidden">
                   <div className="px-4 py-3 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
                     <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Notifications</p>
                     <button onClick={() => setBellOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">

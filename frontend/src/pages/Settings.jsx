@@ -150,7 +150,7 @@ export default function Settings() {
 
   return (
     <BankShell title="Settings">
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Account Settings</h1>
           <p className="text-slate-400 text-sm mt-1">Manage your profile, security, and preferences</p>

@@ -320,7 +320,7 @@ function AIAssistant({ accounts, transactions, totalBalance }) {
       {/* Floating button */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-[#063b36] text-white shadow-xl flex items-center justify-center hover:bg-[#041f1c] hover:scale-105 transition-all duration-200"
+        className="fixed bottom-5 right-4 z-40 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#063b36] text-white shadow-xl flex items-center justify-center hover:bg-[#041f1c] hover:scale-105 transition-all duration-200"
         title="Hunch AI"
       >
         <Sparkles size={22} />
@@ -329,7 +329,7 @@ function AIAssistant({ accounts, transactions, totalBalance }) {
       {/* Chat panel */}
       {open && (
         <div
-          className="fixed bottom-24 right-6 z-40 w-80 h-96 bg-white dark:bg-[#111a18] rounded-2xl shadow-2xl border border-slate-100 dark:border-white/10 flex flex-col overflow-hidden"
+          className="fixed bottom-24 right-4 z-40 w-[calc(100vw-2rem)] max-w-sm h-96 bg-white dark:bg-[#111a18] rounded-2xl shadow-2xl border border-slate-100 dark:border-white/10 flex flex-col overflow-hidden"
           style={{ animation: 'slideUp 0.22s ease-out' }}
         >
           <style>{`@keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }`}</style>
@@ -483,12 +483,12 @@ export default function Dashboard() {
   if (loading) {
     return (
       <BankShell title="Dashboard">
-        <div className="max-w-6xl mx-auto px-6 py-8 space-y-5">
-          <div className="h-44 rounded-2xl animate-pulse bg-[#063b36]/30" />
-          <div className="grid grid-cols-4 gap-3">
-            {[0, 1, 2, 3].map((i) => <div key={i} className="h-20 bg-white dark:bg-white/5 rounded-2xl animate-pulse border border-slate-100 dark:border-white/10" />)}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-5">
+          <div className="h-36 sm:h-44 rounded-2xl animate-pulse bg-[#063b36]/30" />
+          <div className="grid grid-cols-4 gap-2 sm:gap-3">
+            {[0, 1, 2, 3].map((i) => <div key={i} className="h-16 sm:h-20 bg-white dark:bg-white/5 rounded-2xl animate-pulse border border-slate-100 dark:border-white/10" />)}
           </div>
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <div className="h-64 bg-white dark:bg-white/5 rounded-2xl animate-pulse border border-slate-100 dark:border-white/10" />
             <div className="h-64 bg-white dark:bg-white/5 rounded-2xl animate-pulse border border-slate-100 dark:border-white/10" />
             <div className="space-y-4">
@@ -504,10 +504,10 @@ export default function Dashboard() {
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <BankShell title="Dashboard">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         {/* ── Hero ─────────────────────────────────────────────────────── */}
-        <div className="relative bg-gradient-to-br from-[#041f1c] via-[#063b36] to-[#0a5a52] rounded-2xl p-8 overflow-hidden">
+        <div className="relative bg-gradient-to-br from-[#041f1c] via-[#063b36] to-[#0a5a52] rounded-2xl p-5 sm:p-8 overflow-hidden">
           <div className="pointer-events-none absolute -top-10 -right-10 w-48 h-48 rounded-full bg-[#7CFC00]/5" />
           <div className="pointer-events-none absolute bottom-0 left-1/3 w-32 h-32 rounded-full bg-white/[0.03]" />
           <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
@@ -516,8 +516,8 @@ export default function Dashboard() {
                 {greeting()}, {user?.full_name?.split(' ')[0] ?? 'there'}
               </p>
               <p className="text-[10px] uppercase tracking-[2.5px] text-white/30 mb-3">Total Balance · USD</p>
-              <p className="text-5xl font-bold tracking-tight text-white leading-none tabular-nums">
-                {balanceDollars}<span className="text-2xl text-white/50">.{balanceCents}</span>
+              <p className="text-4xl sm:text-5xl font-bold tracking-tight text-white leading-none tabular-nums">
+                {balanceDollars}<span className="text-xl sm:text-2xl text-white/50">.{balanceCents}</span>
               </p>
               <div className="flex items-center gap-2.5 mt-3 flex-wrap">
                 <span className="text-[11px] text-white/35">
@@ -554,7 +554,7 @@ export default function Dashboard() {
         <BalanceChart transactions={allTx} accounts={accounts} />
 
         {/* ── Quick actions ─────────────────────────────────────────────── */}
-        <div className="grid grid-cols-4 gap-3 mt-5">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3 mt-4 sm:mt-5">
           {[
             { label: 'Transfer', onClick: () => setShowTransferModal(true), bg: 'bg-emerald-50 dark:bg-emerald-900/20', fg: 'text-emerald-700 dark:text-emerald-400', icon: <ArrowLeftRight size={16} /> },
             { label: 'Deposit',  onClick: () => navigate('/deposit'),       bg: 'bg-sky-50 dark:bg-sky-900/20',     fg: 'text-sky-700 dark:text-sky-400',     icon: <PlusCircle size={16} />    },
@@ -564,7 +564,7 @@ export default function Dashboard() {
             <button
               key={label}
               onClick={onClick}
-              className="flex flex-col items-center gap-2 py-4 px-3 bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+              className="flex flex-col items-center gap-1.5 sm:gap-2 py-3 sm:py-4 px-2 sm:px-3 bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
             >
               <div className={`w-9 h-9 rounded-full flex items-center justify-center ${bg} ${fg}`}>
                 {icon}
