@@ -1,7 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Bell, Menu, X } from 'lucide-react';
+import { Bell, Menu, X, Moon, Sun } from 'lucide-react';
+import api from '../api/client';
+
+function timeAgo(dateStr) {
+  const diff = (Date.now() - new Date(dateStr)) / 1000;
+  if (diff < 60)     return 'Just now';
+  if (diff < 3600)   return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400)  return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 172800) return 'Yesterday';
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
 const NAV_ITEMS = [
   { label: 'Dashboard',    href: '/dashboard' },
@@ -30,6 +40,32 @@ export default function BankShell({ children, title }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [bellOpen, setBellOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const bellRef = useRef(null);
+
+  const [dark, setDark] = useState(() => {
+    try { return localStorage.getItem('hunch-theme') === 'dark'; } catch { return false; }
+  });
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark);
+    try { localStorage.setItem('hunch-theme', dark ? 'dark' : 'light'); } catch {}
+  }, [dark]);
+
+  useEffect(() => {
+    api.get('/accounts/transactions?limit=5')
+      .then(({ data }) => setNotifications(data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!bellOpen) return;
+    const handler = (e) => {
+      if (bellRef.current && !bellRef.current.contains(e.target)) setBellOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [bellOpen]);
 
   const handleLogout = () => { logout(); navigate('/'); };
 
@@ -41,27 +77,35 @@ export default function BankShell({ children, title }) {
     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
   });
 
-  return (
-    <div className="min-h-screen flex flex-col">
+  const notifDotCls = (type) => {
+    if (type === 'DEPOSIT')    return 'bg-emerald-500';
+    if (type === 'WITHDRAWAL') return 'bg-red-500';
+    return 'bg-sky-500';
+  };
+  const notifLabel = (tx) => {
+    const amt = '$' + parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 });
+    if (tx.type === 'DEPOSIT')    return `Deposit received · ${amt}`;
+    if (tx.type === 'WITHDRAWAL') return `Withdrawal · ${amt}`;
+    return `Transfer · ${amt}`;
+  };
 
-      {/* ── FDIC strip ─────────────────────────────────────────────────── */}
+  return (
+    <div className="min-h-screen flex flex-col bg-[#f0f4f2] dark:bg-[#0a0f0e] transition-colors duration-300">
+
       <div className="w-full bg-[#041f1c] text-center py-1 px-8">
         <span className="text-[10px] text-white/50 tracking-wide">
           FDIC-Insured — Backed by the full faith and credit of the U.S. Government
         </span>
       </div>
 
-      {/* ── Main header ────────────────────────────────────────────────── */}
       <header className="bg-[#041f1c] border-b border-white/10 px-8 py-4 shrink-0">
         <div className="flex items-center justify-between max-w-screen-xl mx-auto">
 
-          {/* Left: logo */}
           <Link to="/dashboard" className="flex items-center gap-2.5 shrink-0">
             <LogoMark />
             <span className="text-white font-bold text-xl tracking-tight">Hunch.</span>
           </Link>
 
-          {/* Center: nav links (desktop) */}
           <nav className="hidden md:flex items-center gap-1">
             {NAV_ITEMS.map(({ label, href }) => {
               const active =
@@ -72,9 +116,7 @@ export default function BankShell({ children, title }) {
                   key={href}
                   to={href}
                   className={`text-sm font-medium px-3 py-1 rounded-full transition-all ${
-                    active
-                      ? 'bg-white/15 text-white'
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                    active ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   {label}
@@ -83,12 +125,56 @@ export default function BankShell({ children, title }) {
             })}
           </nav>
 
-          {/* Right: date + bell + avatar + mobile hamburger */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-white/50 hidden sm:block">{today}</span>
-            <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors">
-              <Bell size={17} />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-white/50 hidden sm:block mr-1">{today}</span>
+
+            <button
+              onClick={() => setDark((d) => !d)}
+              title={dark ? 'Light mode' : 'Dark mode'}
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+            >
+              {dark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
+
+            <div className="relative" ref={bellRef}>
+              <button
+                onClick={() => setBellOpen((o) => !o)}
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors relative"
+              >
+                <Bell size={17} />
+                {notifications.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-[#041f1c]" />
+                )}
+              </button>
+              {bellOpen && (
+                <div className="absolute right-0 top-11 z-50 w-80 bg-white dark:bg-[#111a18] rounded-2xl shadow-xl border border-slate-100 dark:border-white/10 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Notifications</p>
+                    <button onClick={() => setBellOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                      <X size={14} />
+                    </button>
+                  </div>
+                  {notifications.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <p className="text-xs text-slate-400">No notifications yet</p>
+                    </div>
+                  ) : (
+                    <ul>
+                      {notifications.map((tx) => (
+                        <li key={tx.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-b border-slate-50 dark:border-white/5 last:border-0">
+                          <div className={`w-2 h-2 rounded-full shrink-0 ${notifDotCls(tx.type)}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-slate-700 dark:text-white/80 truncate">{notifLabel(tx)}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{timeAgo(tx.created_at)}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+
             <button
               onClick={handleLogout}
               title="Sign out"
@@ -96,6 +182,7 @@ export default function BankShell({ children, title }) {
             >
               {initials}
             </button>
+
             <button
               className="md:hidden w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
               onClick={() => setMobileOpen((o) => !o)}
@@ -105,7 +192,6 @@ export default function BankShell({ children, title }) {
           </div>
         </div>
 
-        {/* Mobile nav dropdown */}
         {mobileOpen && (
           <nav className="md:hidden mt-3 flex flex-col gap-1 border-t border-white/10 pt-3 pb-2">
             {NAV_ITEMS.map(({ label, href }) => {
@@ -118,9 +204,7 @@ export default function BankShell({ children, title }) {
                   to={href}
                   onClick={() => setMobileOpen(false)}
                   className={`text-sm font-medium px-4 py-2 rounded-lg transition-all ${
-                    active
-                      ? 'bg-white/15 text-white'
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                    active ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   {label}
@@ -131,8 +215,7 @@ export default function BankShell({ children, title }) {
         )}
       </header>
 
-      {/* ── Page content ───────────────────────────────────────────────── */}
-      <main className="flex-1 bg-[#f0f4f2]">
+      <main className="flex-1">
         {children}
       </main>
     </div>
