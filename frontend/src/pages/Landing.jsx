@@ -126,7 +126,7 @@ export default function Landing() {
         {/* Content — vertically & horizontally centered */}
         <div className="relative z-10 flex flex-col items-center text-center gap-5 px-4">
           {/* Hexagon H logo */}
-          <svg viewBox="0 0 160 180" className="w-48 h-48 mb-2 opacity-50" fill="none">
+          <svg viewBox="0 0 160 180" className="w-28 h-28 sm:w-48 sm:h-48 mb-2 opacity-50" fill="none">
             <polygon points="80,4 152,44 152,136 80,176 8,136 8,44"  stroke="#4ade80" strokeWidth="2.5" fill="none" />
             <polygon points="80,24 136,56 136,124 80,156 24,124 24,56" stroke="#4ade80" strokeWidth="1.5" fill="none" opacity="0.5" />
             <text x="50%" y="56%" dominantBaseline="middle" textAnchor="middle"
@@ -134,7 +134,7 @@ export default function Landing() {
           </svg>
 
           {/* WELCOME */}
-          <h1 className="text-7xl md:text-9xl font-black uppercase" style={{ color: '#4ade80', letterSpacing: '0.15em' }}>
+          <h1 className="text-[13vw] sm:text-7xl md:text-9xl font-black uppercase" style={{ color: '#4ade80', letterSpacing: '0.1em' }}>
             WELCOME
           </h1>
 
@@ -142,7 +142,7 @@ export default function Landing() {
             WELCOME TO HUNCH BANK
           </p>
 
-          <p className="text-white/55 text-sm max-w-lg leading-relaxed">
+          <p className="text-white/55 text-sm max-w-lg leading-relaxed text-center px-2">
             Hunch Bank is more than checking, more than savings, more than
             lending. It&apos;s people who understand where you&apos;re coming from, with
             the know-how to get you where you want to be.
