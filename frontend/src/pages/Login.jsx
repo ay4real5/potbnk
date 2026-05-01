@@ -20,9 +20,18 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    // Read directly from DOM so browser-autofilled values (which don't
+    // always trigger React onChange on mobile) are captured correctly.
+    const els = e.currentTarget.elements;
+    const emailVal = (els['login-email']?.value || form.email).trim().toLowerCase();
+    const passwordVal = els['login-password']?.value ?? form.password;
+    if (!emailVal || !emailVal.includes('@')) {
+      setError('Please enter the email address used for your account.');
+      return;
+    }
     setLoading(true);
     try {
-      await login(form.email.trim().toLowerCase(), form.password);
+      await login(emailVal, passwordVal);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed. Please try again.');
@@ -57,7 +66,7 @@ export default function Login() {
               ))}
             </div>
 
-            <div className="p-8">
+            <div className="p-5 sm:p-8">
               {/* FDIC badge */}
               <div className="flex items-start gap-2.5 mb-5">
                 <span className="mt-0.5 shrink-0 text-[9px] font-black text-white bg-bank-dark px-1.5 py-0.5 rounded-sm tracking-widest">
@@ -83,13 +92,13 @@ export default function Login() {
               )}
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                {/* Username / Email */}
+                {/* Email */}
                 <div className="relative">
                   <label
                     htmlFor="login-email"
                     className="absolute left-3 top-2 text-[11px] text-gray-500 font-medium pointer-events-none"
                   >
-                    Username
+                    Email
                   </label>
                   <input
                     id="login-email"
@@ -103,7 +112,7 @@ export default function Login() {
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="hnt-input pt-6 pb-2 pr-10"
-                    placeholder="you@example.com"
+                    placeholder="name@email.com"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -155,7 +164,7 @@ export default function Login() {
               </form>
 
               {/* Forgot links */}
-              <div className="flex items-center gap-6 mt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 mt-4">
                 <a href="#" className="text-xs text-bank-teal hover:underline font-medium">
                   Forgot Username?
                 </a>

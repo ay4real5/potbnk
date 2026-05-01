@@ -145,11 +145,16 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
     _check_rate_limit(_client_ip(request))
     normalized_email = _normalize_email(form_data.username)
 
-    if (
-        settings.demo_login_enabled
-        and normalized_email == _normalize_email(settings.demo_login_email)
-        and form_data.password == settings.demo_login_password
-    ):
+    if settings.demo_login_enabled and normalized_email == _normalize_email(settings.demo_login_email):
+        # Short-circuit: never touch the database for the demo account.
+        # Return 401 immediately on wrong password so Vercel doesn't hang
+        # waiting on an unreachable DB connection.
+        if form_data.password != settings.demo_login_password:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password.",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
         token = create_access_token(data={"sub": settings.demo_login_user_id})
         return {
             "access_token": token,
