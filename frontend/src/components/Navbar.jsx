@@ -6,7 +6,7 @@ import {
   PiggyBank, RefreshCw, Handshake, Shield, Home, DollarSign,
   CreditCard, Calculator, TrendingUp, MapPin, Trophy,
   ShieldCheck, Lock, CheckSquare, Info, Monitor, ChevronRight, Map,
-  Eye, EyeOff,
+  Eye, EyeOff, ChevronDown,
 } from 'lucide-react';
 
 // ── Logo ─────────────────────────────────────────────────────────────────────
@@ -436,6 +436,40 @@ function FloatInput({ id, label, type = 'text', value, onChange, suffix }) {
   );
 }
 
+function MobileLoginTypeControl({ activeTab, setActiveTab, onLogin }) {
+  const fieldId = 'mobile-login-type';
+
+  return (
+    <section className="w-full rounded-2xl border border-white/15 bg-white/[0.06] p-3.5">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-white/55 mb-2">Mobile login</p>
+      <label htmlFor={fieldId} className="block text-[11px] font-semibold text-white/85 mb-1.5">
+        Personal or Business
+      </label>
+
+      <div className="relative">
+        <select
+          id={fieldId}
+          value={activeTab}
+          onChange={(e) => setActiveTab(e.target.value)}
+          className="w-full h-11 appearance-none rounded-xl border border-white/25 bg-[#0b5a5e] px-3 pr-10 text-white text-[15px] font-semibold focus:outline-none focus:ring-2 focus:ring-[#8fdb46]/60"
+        >
+          <option value="Personal" className="text-bank-dark">Personal</option>
+          <option value="Business" className="text-bank-dark">Business</option>
+        </select>
+        <ChevronDown size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/75" />
+      </div>
+
+      <Link
+        to="/login"
+        onClick={onLogin}
+        className="mt-3 inline-flex h-10 items-center justify-center rounded-full bg-[#8fdb46] px-5 text-bank-dark text-sm font-bold hover:brightness-105 transition-colors"
+      >
+        Login to {activeTab}
+      </Link>
+    </section>
+  );
+}
+
 function LoginDropdown({ onClose }) {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -804,27 +838,11 @@ export default function Navbar({ overlay = false }) {
             <>
               {!mobileCategory ? (
                 <>
-                  <div className="max-w-[280px]">
-                    <label htmlFor="mobile-segment" className="block text-[10px] uppercase tracking-[0.16em] text-white/60 mb-2">
-                      Login Type
-                    </label>
-                    <select
-                      id="mobile-segment"
-                      value={activeTab}
-                      onChange={(e) => setActiveTab(e.target.value)}
-                      className="w-full h-11 rounded-xl border border-white/25 bg-white/10 px-4 text-white text-[15px] font-semibold focus:outline-none focus:ring-2 focus:ring-[#8fdb46]/60"
-                    >
-                      <option value="Personal" className="text-bank-dark">Personal</option>
-                      <option value="Business" className="text-bank-dark">Business</option>
-                    </select>
-                    <Link
-                      to="/login"
-                      onClick={closeMobileMenu}
-                      className="mt-3 inline-flex items-center justify-center rounded-full bg-[#8fdb46] text-bank-dark text-sm font-bold px-5 py-2.5"
-                    >
-                      Login to {activeTab}
-                    </Link>
-                  </div>
+                  <MobileLoginTypeControl
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    onLogin={closeMobileMenu}
+                  />
 
                   <div className="flex flex-col gap-1 pt-1">
                     {NAV_CATEGORIES.map((cat) => (
@@ -892,27 +910,11 @@ export default function Navbar({ overlay = false }) {
                     </div>
                   </div>
 
-                  <div className="max-w-[280px]">
-                    <label htmlFor="mobile-segment-sub" className="block text-[10px] uppercase tracking-[0.16em] text-white/60 mb-2">
-                      Login Type
-                    </label>
-                    <select
-                      id="mobile-segment-sub"
-                      value={activeTab}
-                      onChange={(e) => setActiveTab(e.target.value)}
-                      className="w-full h-11 rounded-xl border border-white/25 bg-white/10 px-4 text-white text-[15px] font-semibold focus:outline-none focus:ring-2 focus:ring-[#8fdb46]/60"
-                    >
-                      <option value="Personal" className="text-bank-dark">Personal</option>
-                      <option value="Business" className="text-bank-dark">Business</option>
-                    </select>
-                    <Link
-                      to="/login"
-                      onClick={closeMobileMenu}
-                      className="mt-3 inline-flex items-center justify-center rounded-full bg-[#8fdb46] text-bank-dark text-sm font-bold px-5 py-2.5"
-                    >
-                      Login to {activeTab}
-                    </Link>
-                  </div>
+                  <MobileLoginTypeControl
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    onLogin={closeMobileMenu}
+                  />
 
                   {activeTab === 'Business' ? (
                     <div className="space-y-4 pt-2">
