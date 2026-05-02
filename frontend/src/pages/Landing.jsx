@@ -129,7 +129,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen font-sans">
-      <Navbar />
+      <Navbar overlay />
 
       {/* ── Hero with video (full-screen) ── */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden bg-bank-dark">

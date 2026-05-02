@@ -539,7 +539,7 @@ function LoginDropdown({ onClose }) {
 }
 
 // ── Main Navbar ───────────────────────────────────────────────────────────────
-export default function Navbar() {
+export default function Navbar({ overlay = false }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Personal');
@@ -549,6 +549,7 @@ export default function Navbar() {
   const [loginOpen, setLoginOpen] = useState(false);
   const loginRef = useRef(null);
   const closeTimer = useRef(null);
+  const overlayGuest = overlay && !user;
 
   const handleLogout = () => { logout(); navigate('/'); };
 
@@ -580,11 +581,11 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 bg-bank-dark">
+    <header className={overlayGuest ? 'absolute top-0 left-0 right-0 z-50 bg-transparent' : 'sticky top-0 z-50 bg-bank-dark'}>
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
 
       {/* ── Top utility bar ── */}
-      <div className="border-b border-white/10">
+      <div className={overlayGuest ? 'border-b border-white/15 bg-bank-dark/70 backdrop-blur-sm' : 'border-b border-white/10'}>
         <div className="max-w-7xl mx-auto px-6 h-9 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-white/60 border border-white/30 px-1.5 py-0.5 rounded-sm tracking-wide">FDIC</span>
@@ -605,7 +606,7 @@ export default function Navbar() {
       </div>
 
       {/* ── Main nav row ── */}
-      <div className="max-w-7xl mx-auto px-6">
+      <div className={overlayGuest ? 'max-w-7xl mx-auto px-6 bg-bank-dark/55 backdrop-blur-sm' : 'max-w-7xl mx-auto px-6'}>
         <div className="h-16 flex items-center">
 
           {/* Logo */}
@@ -682,7 +683,7 @@ export default function Navbar() {
 
       {/* ── Category nav + mega-menu (guest desktop) ── */}
       {!user && (
-        <div className="relative hidden md:block" onMouseLeave={startClose}>
+        <div className={overlayGuest ? 'relative hidden md:block bg-bank-dark/35 backdrop-blur-sm' : 'relative hidden md:block'} onMouseLeave={startClose}>
           <div className="border-t border-white/10">
             <div className="flex justify-center gap-1 h-11 items-center">
               {NAV_CATEGORIES.map((cat) => (
