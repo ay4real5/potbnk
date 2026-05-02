@@ -606,7 +606,7 @@ export default function Navbar({ overlay = false }) {
       </div>
 
       {/* ── Main nav row ── */}
-      <div className={overlayGuest ? 'max-w-7xl mx-auto px-6 bg-bank-dark/55 backdrop-blur-sm' : 'max-w-7xl mx-auto px-6'}>
+      <div className={overlayGuest ? 'max-w-7xl mx-auto px-6 bg-bank-dark' : 'max-w-7xl mx-auto px-6'}>
         <div className="h-16 flex items-center">
 
           {/* Logo */}
@@ -683,7 +683,7 @@ export default function Navbar({ overlay = false }) {
 
       {/* ── Category nav + mega-menu (guest desktop) ── */}
       {!user && (
-        <div className={overlayGuest ? 'relative hidden md:block bg-bank-dark/35 backdrop-blur-sm' : 'relative hidden md:block'} onMouseLeave={startClose}>
+        <div className={overlayGuest ? 'relative hidden md:block bg-bank-dark' : 'relative hidden md:block'} onMouseLeave={startClose}>
           <div className="border-t border-white/10">
             <div className="flex justify-center gap-1 h-11 items-center">
               {NAV_CATEGORIES.map((cat) => (
