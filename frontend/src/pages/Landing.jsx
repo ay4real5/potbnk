@@ -191,18 +191,26 @@ export default function Landing() {
               fontSize="70" fontWeight="900" fill="#4ade80" fontFamily="Inter,system-ui,sans-serif">H</text>
           </svg>
 
-          {/* WELCOME */}
-          <h1
-            className="text-[13vw] sm:text-7xl md:text-9xl font-black uppercase font-display italic"
-            style={{
-              color: '#8fdb46',
-              letterSpacing: '0.06em',
-              transform: 'rotate(-8deg)',
-              textShadow: '0 8px 35px rgba(143,219,70,0.25)',
-            }}
-          >
-            WELCOME
-          </h1>
+          {/* Curved WELCOME wordmark */}
+          <div className="w-[min(86vw,860px)] -mt-2">
+            <svg viewBox="0 0 900 280" className="w-full h-auto" aria-hidden="true">
+              <defs>
+                <path id="welcome-arc" d="M80 210 Q450 34 820 210" />
+              </defs>
+              <text
+                fill="#8fdb46"
+                fontSize="122"
+                fontWeight="700"
+                fontStyle="italic"
+                letterSpacing="7"
+                style={{ textShadow: '0 10px 30px rgba(143,219,70,0.25)' }}
+              >
+                <textPath href="#welcome-arc" startOffset="50%" textAnchor="middle">
+                  WELCOME
+                </textPath>
+              </text>
+            </svg>
+          </div>
 
           <p className="text-white/70 text-xs font-bold uppercase tracking-[0.35em] mt-1">
             WELCOME TO HUNCH BANK
@@ -391,10 +399,15 @@ export default function Landing() {
       <button
         type="button"
         onClick={() => setAiOpen((o) => !o)}
-        className="fixed right-4 bottom-4 z-40 w-12 h-12 rounded-full bg-[#8fdb46] text-bank-dark font-black shadow-xl hover:brightness-105 transition-all"
+        className="fixed right-4 bottom-4 z-40 w-12 h-12 rounded-full border border-white/80 bg-gradient-to-br from-[#8fdb46] to-[#3f7f2f] text-white shadow-xl hover:brightness-105 transition-all flex items-center justify-center"
         aria-label="Toggle Hunch AI"
       >
-        AI
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M21 12a8 8 0 0 1-8 8H6l-3 3v-7a8 8 0 1 1 18-4z" />
+          <circle cx="9" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="12" r="1" fill="currentColor" stroke="none" />
+        </svg>
       </button>
       {aiOpen && (
         <div className="fixed right-4 bottom-20 z-40 w-[calc(100vw-2rem)] max-w-sm h-[430px] rounded-2xl overflow-hidden border border-white/15 shadow-2xl bg-[#072e2d] text-white">
