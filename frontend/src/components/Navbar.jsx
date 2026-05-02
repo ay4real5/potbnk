@@ -585,28 +585,30 @@ export default function Navbar({ overlay = false }) {
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
 
       {/* ── Top utility bar ── */}
-      <div className={overlayGuest ? 'border-b border-white/10 bg-bank-dark/55 backdrop-blur-xl' : 'border-b border-white/10'}>
-        <div className="max-w-7xl mx-auto px-6 h-9 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-white/60 border border-white/30 px-1.5 py-0.5 rounded-sm tracking-wide">FDIC</span>
-            <span className="text-[11px] text-white/60 hidden sm:block">
-              FDIC-Insured — Backed by the full faith and credit of the U.S. Government
-            </span>
+      {!overlayGuest && (
+        <div className="border-b border-white/10">
+          <div className="max-w-7xl mx-auto px-6 h-9 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-white/60 border border-white/30 px-1.5 py-0.5 rounded-sm tracking-wide">FDIC</span>
+              <span className="text-[11px] text-white/60 hidden sm:block">
+                FDIC-Insured — Backed by the full faith and credit of the U.S. Government
+              </span>
+            </div>
+            <nav className="hidden md:flex items-center gap-6">
+              {[
+                { lbl: 'About Hunch',     href: '/about' },
+                { lbl: 'Find a Branch',   href: '/locations' },
+                { lbl: 'Customer Service', href: '/support' },
+              ].map(({ lbl, href }) => (
+                <Link key={lbl} to={href} className="text-[11px] text-white/70 hover:text-white transition-colors">{lbl}</Link>
+              ))}
+            </nav>
           </div>
-          <nav className="hidden md:flex items-center gap-6">
-            {[
-              { lbl: 'About Hunch',     href: '/about' },
-              { lbl: 'Find a Branch',   href: '/locations' },
-              { lbl: 'Customer Service', href: '/support' },
-            ].map(({ lbl, href }) => (
-              <Link key={lbl} to={href} className="text-[11px] text-white/70 hover:text-white transition-colors">{lbl}</Link>
-            ))}
-          </nav>
         </div>
-      </div>
+      )}
 
       {/* ── Main nav row ── */}
-      <div className={overlayGuest ? 'bg-bank-dark/55 backdrop-blur-xl border-b border-white/10' : ''}>
+      <div>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center">
 
           {/* Logo */}
@@ -683,8 +685,8 @@ export default function Navbar({ overlay = false }) {
 
       {/* ── Category nav + mega-menu (guest desktop) ── */}
       {!user && (
-        <div className={overlayGuest ? 'relative hidden md:block bg-bank-dark/55 backdrop-blur-xl' : 'relative hidden md:block'} onMouseLeave={startClose}>
-          <div className="border-t border-white/10">
+        <div className={overlayGuest ? 'relative hidden md:block' : 'relative hidden md:block'} onMouseLeave={startClose}>
+          <div className={overlayGuest ? '' : 'border-t border-white/10'}>
             <div className="flex justify-center gap-1 h-11 items-center">
               {NAV_CATEGORIES.map((cat) => (
                 <button
