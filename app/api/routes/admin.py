@@ -1,22 +1,222 @@
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_current_user
 from app.core.database import get_db
+from app.core.security import get_password_hash
 from app.models.models import Account, AdminAuditLog, Transaction, User
-from app.schemas.admin import AdminAccountCreditRequest
+from app.schemas.admin import (
+    AdminAccountCreditRequest,
+    AdminAuditItem,
+    AdminDebitRequest,
+    AdminOverview,
+    AdminPasswordResetRequest,
+    AdminUserDetail,
+    AdminUserItem,
+)
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
+
+# In-memory lock set (demo-safe; swap for DB column in production)
+_locked_users: set = set()
 
 
 def _require_admin(current_user):
     if not bool(getattr(current_user, "is_admin", False)):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required.",
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required.")
+
+
+def _audit(db: Session, actor: str, action: str, target_type: str, target_id: str, details: str = ""):
+    db.add(AdminAuditLog(
+        actor_email=actor,
+        action=action,
+        target_type=target_type,
+        target_id=str(target_id),
+        details=details,
+    ))
+
+
+# ── Overview ──────────────────────────────────────────────────────────────────
+@router.get("/overview")
+def overview(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    _require_admin(current_user)
+    since = datetime.now(timezone.utc) - timedelta(days=7)
+    users = db.query(func.count(User.id)).scalar()
+    accounts = db.query(func.count(Account.id)).scalar()
+    transactions = db.query(func.count(Transaction.id)).scalar()
+    total_balance = db.query(func.coalesce(func.sum(Account.balance), 0)).scalar()
+    recent = db.query(func.count(Transaction.id)).filter(Transaction.created_at >= since).scalar()
+    return {
+        "users": users,
+        "accounts": accounts,
+        "transactions": transactions,
+        "total_balances_usd": float(total_balance),
+        "recent_activity_7d": recent,
+    }
+
+
+# ── User search & list ────────────────────────────────────────────────────────
+@router.get("/users")
+def list_users(
+    q: str = Query("", description="Search name or email"),
+    limit: int = 50,
+    offset: int = 0,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_admin(current_user)
+    query = db.query(User)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(or_(User.full_name.ilike(like), User.email.ilike(like)))
+    users = query.order_by(User.created_at.desc()).offset(offset).limit(limit).all()
+    result = []
+    for u in users:
+        accts = db.query(Account).filter(Account.user_id == u.id).all()
+        total_bal = sum(float(a.balance) for a in accts)
+        result.append({
+            "id": str(u.id),
+            "full_name": u.full_name,
+            "email": u.email,
+            "created_at": str(u.created_at),
+            "account_count": len(accts),
+            "total_balance": total_bal,
+            "is_locked": str(u.id) in _locked_users,
+        })
+    return result
+
+
+@router.get("/users/{user_id}")
+def get_user_detail(
+    user_id: str,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_admin(current_user)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    accts = db.query(Account).filter(Account.user_id == user.id).all()
+    accounts_data = [
+        {
+            "id": str(a.id),
+            "account_number": a.account_number,
+            "account_type": a.account_type,
+            "balance": float(a.balance),
+            "created_at": str(a.created_at),
+        }
+        for a in accts
+    ]
+    return {
+        "id": str(user.id),
+        "full_name": user.full_name,
+        "email": user.email,
+        "created_at": str(user.created_at),
+        "accounts": accounts_data,
+        "is_locked": str(user.id) in _locked_users,
+    }
+
+
+# ── Lock / unlock user ────────────────────────────────────────────────────────
+@router.post("/users/{user_id}/lock")
+def lock_user(user_id: str, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    _require_admin(current_user)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    _locked_users.add(str(user.id))
+    _audit(db, getattr(current_user, "email", "?"), "lock_user", "user", user.id, f"email={user.email}")
+    db.commit()
+    return {"status": "success", "message": f"Account for {user.email} has been locked."}
+
+
+@router.post("/users/{user_id}/unlock")
+def unlock_user(user_id: str, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    _require_admin(current_user)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    _locked_users.discard(str(user.id))
+    _audit(db, getattr(current_user, "email", "?"), "unlock_user", "user", user.id, f"email={user.email}")
+    db.commit()
+    return {"status": "success", "message": f"Account for {user.email} has been unlocked."}
+
+
+# ── Force password reset ────────────────────────────────────────────────────
+@router.post("/users/{user_id}/reset-password")
+def admin_reset_password(
+    user_id: str,
+    payload: AdminPasswordResetRequest,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_admin(current_user)
+    if len(payload.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters.")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    user.hashed_password = get_password_hash(payload.new_password)
+    _audit(db, getattr(current_user, "email", "?"), "reset_password", "user", user.id, f"email={user.email}")
+    db.commit()
+    return {"status": "success", "message": f"Password reset for {user.email}."}
+
+
+# ── Audit log ─────────────────────────────────────────────────────────────────
+@router.get("/audit-log")
+def get_audit_log(
+    limit: int = 100,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_admin(current_user)
+    logs = (
+        db.query(AdminAuditLog)
+        .order_by(AdminAuditLog.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "id": str(l.id),
+            "actor_email": l.actor_email,
+            "action": l.action,
+            "target_type": l.target_type,
+            "target_id": l.target_id,
+            "details": l.details,
+            "created_at": str(l.created_at),
+        }
+        for l in logs
+    ]
+
+
+
+
+# ── Credit / Debit ────────────────────────────────────────────────────────────
+def _resolve_account(db, payload_account_id, payload_email, payload_type):
+    if payload_account_id:
+        acct = db.query(Account).filter(Account.id == payload_account_id).first()
+        if not acct:
+            raise HTTPException(status_code=404, detail="Account not found.")
+        return acct
+    if not payload_email or not payload_type:
+        raise HTTPException(status_code=400, detail="Provide account_id or user_email + account_type.")
+    user = db.query(User).filter(User.email == payload_email.strip().lower()).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    acct = (
+        db.query(Account)
+        .filter(Account.user_id == user.id, Account.account_type == payload_type.strip().upper())
+        .order_by(Account.created_at.asc())
+        .first()
+    )
+    if not acct:
+        raise HTTPException(status_code=404, detail="No account found for this user and account type.")
+    return acct
 
 
 @router.post("/credit")
@@ -26,76 +226,51 @@ def credit_user_account(
     db: Session = Depends(get_db),
 ):
     _require_admin(current_user)
-
     amount = Decimal(str(payload.amount))
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
-
-    target_account = None
-
-    if payload.account_id:
-        target_account = db.query(Account).filter(Account.id == payload.account_id).first()
-        if not target_account:
-            raise HTTPException(status_code=404, detail="Account not found.")
-    else:
-        if not payload.user_email or not payload.account_type:
-            raise HTTPException(
-                status_code=400,
-                detail="Provide account_id or both user_email and account_type.",
-            )
-
-        normalized_email = payload.user_email.strip().lower()
-        account_type = payload.account_type.strip().upper()
-
-        target_user = db.query(User).filter(User.email == normalized_email).first()
-        if not target_user:
-            raise HTTPException(status_code=404, detail="User not found.")
-
-        target_account = (
-            db.query(Account)
-            .filter(Account.user_id == target_user.id, Account.account_type == account_type)
-            .order_by(Account.created_at.asc())
-            .first()
-        )
-        if not target_account:
-            raise HTTPException(
-                status_code=404,
-                detail="No account found for this user and account type.",
-            )
-
-    target_account.balance = Decimal(target_account.balance) + amount
-
-    tx = Transaction(
-        sender_id=None,
-        receiver_id=target_account.id,
-        amount=amount,
-        type="ADMIN_CREDIT",
-        description=(payload.description or "Admin credit").strip(),
-    )
-    db.add(tx)
-
-    db.add(
-        AdminAuditLog(
-            actor_email=getattr(current_user, "email", "unknown"),
-            action="credit_account",
-            target_type="account",
-            target_id=str(target_account.id),
-            details=(
-                f"amount={amount} account_number={target_account.account_number} "
-                f"account_type={target_account.account_type}"
-            ),
-        )
-    )
-
+    acct = _resolve_account(db, payload.account_id, payload.user_email, payload.account_type)
+    acct.balance = Decimal(acct.balance) + amount
+    db.add(Transaction(sender_id=None, receiver_id=acct.id, amount=amount, type="ADMIN_CREDIT",
+        description=(payload.description or "Admin credit").strip()))
+    _audit(db, getattr(current_user, "email", "?"), "credit_account", "account", acct.id,
+        f"amount={amount} account_number={acct.account_number} type={acct.account_type}")
     db.commit()
-    db.refresh(target_account)
+    db.refresh(acct)
+    return {"status": "success", "message": "Account credited.", "account_id": str(acct.id),
+        "account_number": acct.account_number, "account_type": acct.account_type,
+        "new_balance": float(acct.balance), "credited_amount": float(amount)}
 
-    return {
-        "status": "success",
-        "message": "Account credited successfully.",
-        "account_id": str(target_account.id),
-        "account_number": target_account.account_number,
-        "account_type": target_account.account_type,
-        "new_balance": float(target_account.balance),
-        "credited_amount": float(amount),
-    }
+
+@router.post("/debit")
+def debit_user_account(
+    payload: AdminDebitRequest,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_admin(current_user)
+    amount = Decimal(str(payload.amount))
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
+    user = db.query(User).filter(User.email == payload.user_email.strip().lower()).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    acct = (
+        db.query(Account)
+        .filter(Account.user_id == user.id, Account.account_type == payload.account_type.strip().upper())
+        .order_by(Account.created_at.asc()).first()
+    )
+    if not acct:
+        raise HTTPException(status_code=404, detail="Account not found for this user and type.")
+    if Decimal(acct.balance) < amount:
+        raise HTTPException(status_code=400, detail="Insufficient balance for debit.")
+    acct.balance = Decimal(acct.balance) - amount
+    db.add(Transaction(sender_id=acct.id, receiver_id=None, amount=amount, type="ADMIN_DEBIT",
+        description=(payload.description or "Admin debit").strip()))
+    _audit(db, getattr(current_user, "email", "?"), "debit_account", "account", acct.id,
+        f"amount={amount} account_number={acct.account_number} type={acct.account_type}")
+    db.commit()
+    db.refresh(acct)
+    return {"status": "success", "message": "Account debited.", "account_id": str(acct.id),
+        "account_number": acct.account_number, "account_type": acct.account_type,
+        "new_balance": float(acct.balance), "debited_amount": float(amount)}
