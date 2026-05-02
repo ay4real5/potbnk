@@ -9,8 +9,28 @@ import {
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer,
+  ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
+
+// ── Count-up hook ──────────────────────────────────────────────────────────
+function useCountUp(target, duration = 1100) {
+  const [val, setVal] = useState(0);
+  const prev = useRef(0);
+  useEffect(() => {
+    const from = prev.current;
+    prev.current = target;
+    let start = null;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3); // cubic ease-out
+      setVal(from + (target - from) * eased);
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [target, duration]);
+  return val;
+}
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -138,6 +158,70 @@ function BalanceChart({ transactions, accounts }) {
           </AreaChart>
         </ResponsiveContainer>
       )}
+    </div>
+  );
+}
+
+// ── Quick Transfer Modal ──────────────────────────────────────────────────
+
+// ── Spending Ring ──────────────────────────────────────────────────────────
+function SpendingRing({ deposits, withdrawals }) {
+  const total = deposits + withdrawals;
+  const data = total === 0
+    ? [{ name: 'Empty', value: 1 }]
+    : [
+        { name: 'In',  value: deposits     },
+        { name: 'Out', value: withdrawals  },
+      ];
+  const COLORS = total === 0 ? ['#e2e8f0'] : ['#22c55e', '#ef4444'];
+  const pct = total > 0 ? Math.round((deposits / total) * 100) : 0;
+
+  return (
+    <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-5 mt-5">
+      <h3 className="text-sm font-semibold text-slate-800 dark:text-white/80 mb-4">Monthly Cash Flow</h3>
+      <div className="flex items-center gap-6">
+        <div className="relative w-24 h-24 shrink-0">
+          <PieChart width={96} height={96}>
+            <Pie data={data} cx={44} cy={44} innerRadius={30} outerRadius={44}
+              dataKey="value" strokeWidth={0} startAngle={90} endAngle={-270}>
+              {COLORS.map((c, i) => <Cell key={i} fill={c} />)}
+            </Pie>
+          </PieChart>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-sm font-bold text-slate-700 dark:text-white/80">{pct}%</span>
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 flex-1 min-w-0">
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />Money In
+              </span>
+              <span className="text-xs font-bold text-emerald-600 tabular-nums">
+                +${deposits.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                style={{ width: total > 0 ? `${(deposits / total) * 100}%` : '0%' }} />
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-red-500" />Money Out
+              </span>
+              <span className="text-xs font-bold text-red-600 tabular-nums">
+                -${withdrawals.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-red-500 rounded-full transition-all duration-700"
+                style={{ width: total > 0 ? `${(withdrawals / total) * 100}%` : '0%' }} />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -439,8 +523,9 @@ export default function Dashboard() {
   }, []);
 
   const totalBalance = accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0);
+  const animatedBalance = useCountUp(totalBalance);
   const myAccountIds = new Set(accounts.map((a) => a.id));
-  const balanceFmt     = totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
+  const balanceFmt     = animatedBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
   const balanceDollars = balanceFmt.split('.')[0];
   const balanceCents   = balanceFmt.split('.')[1] ?? '00';
 
@@ -553,6 +638,9 @@ export default function Dashboard() {
 
         {/* ── Balance Chart ─────────────────────────────────────────────── */}
         <BalanceChart transactions={allTx} accounts={accounts} />
+
+        {/* ── Monthly Cash Flow ─────────────────────────────────────────── */}
+        <SpendingRing deposits={monthDeposits} withdrawals={monthWithdrawals} />
 
         {/* ── Quick actions ─────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4 sm:mt-5">

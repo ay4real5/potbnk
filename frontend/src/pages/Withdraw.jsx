@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/client';
 import BankShell from '../components/BankShell';
-import { AlertTriangle, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, CheckCircle } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 const QUICK_AMOUNTS = [50, 100, 250, 500];
@@ -16,6 +16,7 @@ export default function Withdraw() {
   const [form, setForm] = useState({ account_id: '', amount: '', description: 'Withdrawal' });
   const [destination, setDestination] = useState('bank');
   const [loading, setLoading] = useState(false);
+  const [successAmt, setSuccessAmt] = useState(null);
   const toast = useToast();
 
   useEffect(() => {
@@ -28,9 +29,11 @@ export default function Withdraw() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    const amount = parseFloat(form.amount);
     try {
-      const { data } = await api.post('/accounts/withdraw', { ...form, amount: parseFloat(form.amount) });
-      toast.success(data.message || 'Withdrawal successful.');
+      const { data } = await api.post('/accounts/withdraw', { ...form, amount });
+      setSuccessAmt(amount);
+      setTimeout(() => setSuccessAmt(null), 3000);
       const { data: accs } = await api.get('/accounts/');
       setAccounts(accs);
       setForm((f) => ({ ...f, amount: '', description: 'Withdrawal' }));
@@ -64,6 +67,28 @@ export default function Withdraw() {
 
   return (
     <BankShell title="Withdraw Funds">
+      {/* ── Success Overlay ────────────────────────────────────────────── */}
+      {successAmt !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          style={{ animation: 'fadeIn 0.2s ease-out' }}>
+          <style>{`
+            @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+            @keyframes popIn  { from { opacity:0; transform:scale(0.85) } to { opacity:1; transform:scale(1) } }
+          `}</style>
+          <div className="bg-white dark:bg-[#111a18] rounded-3xl shadow-2xl px-10 py-10 flex flex-col items-center gap-4 text-center max-w-xs w-full mx-4"
+            style={{ animation: 'popIn 0.25s cubic-bezier(0.34,1.56,0.64,1)' }}>
+            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+              <CheckCircle size={36} className="text-red-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-800 dark:text-white tabular-nums">
+                -${successAmt.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </p>
+              <p className="text-sm text-slate-500 dark:text-white/50 mt-1">Withdrawal successful</p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Withdraw Funds</h1>
