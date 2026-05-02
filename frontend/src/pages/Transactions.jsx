@@ -205,7 +205,7 @@ export default function Transactions() {
         </div>
 
         {/* Filter bar */}
-        <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-4 mb-4 shadow-sm space-y-3">
+        <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-4 mb-4 shadow-sm space-y-3 premium-enter">
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Account selector */}
             <select
@@ -257,7 +257,7 @@ export default function Transactions() {
         </div>
 
         {/* Summary stats */}
-        <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-4 shadow-sm mb-4">
+        <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-4 shadow-sm mb-4 premium-enter premium-enter-delay-1">
           <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-3">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total In</p>

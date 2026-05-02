@@ -1,11 +1,11 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import BankShell from '../components/BankShell';
 import {
   ArrowLeftRight, MinusCircle, PlusCircle, Settings, Plus, X,
-  ShieldCheck, Send, Sparkles,
+  ShieldCheck, Send, Sparkles, TrendingUp, TriangleAlert,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -46,6 +46,9 @@ const ACCT_GRADIENTS = {
   BUSINESS_CHECKING: 'from-[#2d1b4e] to-[#4a2b8a]',
   MONEY_MARKET:      'from-[#1f3820] to-[#2d6a4f]',
 };
+
+const asMoney = (value) =>
+  '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2 });
 
 function Sparkline({ values }) {
   const W = 140, H = 50;
@@ -222,6 +225,53 @@ function SpendingRing({ deposits, withdrawals }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ForecastCard({ balance, transactions }) {
+  const avgDailyNet = useMemo(() => {
+    if (!transactions.length) return 0;
+    const byDay = new Map();
+    transactions.forEach((tx) => {
+      const day = new Date(tx.created_at).toISOString().slice(0, 10);
+      const delta = tx.type === 'DEPOSIT'
+        ? parseFloat(tx.amount)
+        : tx.type === 'WITHDRAWAL'
+        ? -parseFloat(tx.amount)
+        : 0;
+      byDay.set(day, (byDay.get(day) || 0) + delta);
+    });
+    const days = Math.max(byDay.size, 1);
+    const total = [...byDay.values()].reduce((s, v) => s + v, 0);
+    return total / days;
+  }, [transactions]);
+
+  const projected7 = balance + avgDailyNet * 7;
+  const projected30 = balance + avgDailyNet * 30;
+  const confidence = Math.max(45, Math.min(92, 70 - Math.abs(avgDailyNet) / 8));
+
+  return (
+    <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-5 mt-5">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-white/80">Balance Forecast</h3>
+        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50">
+          Confidence {Math.round(confidence)}%
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl border border-slate-100 dark:border-white/10 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-slate-400 mb-1">7 Day</p>
+          <p className="text-sm font-bold text-slate-700 dark:text-white/80 tabular-nums">{asMoney(projected7)}</p>
+        </div>
+        <div className="rounded-xl border border-slate-100 dark:border-white/10 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-slate-400 mb-1">30 Day</p>
+          <p className="text-sm font-bold text-slate-700 dark:text-white/80 tabular-nums">{asMoney(projected30)}</p>
+        </div>
+      </div>
+      <p className="text-[11px] text-slate-400 mt-3">
+        Projection is based on your recent average daily net flow.
+      </p>
     </div>
   );
 }
@@ -538,9 +588,23 @@ export default function Dashboard() {
     const d = new Date(tx.created_at);
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
+  const prevMonthTx = allTx.filter((tx) => {
+    const d = new Date(tx.created_at);
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return d.getMonth() === prev.getMonth() && d.getFullYear() === prev.getFullYear();
+  });
   const monthDeposits   = monthTx.filter((t) => t.type === 'DEPOSIT').reduce((s, t) => s + parseFloat(t.amount), 0);
   const monthWithdrawals = monthTx.filter((t) => t.type === 'WITHDRAWAL').reduce((s, t) => s + parseFloat(t.amount), 0);
   const monthlyNet = monthDeposits - monthWithdrawals;
+  const prevMonthOut = prevMonthTx
+    .filter((t) => t.type === 'WITHDRAWAL')
+    .reduce((s, t) => s + parseFloat(t.amount), 0);
+  const outDeltaPct = prevMonthOut > 0
+    ? ((monthWithdrawals - prevMonthOut) / prevMonthOut) * 100
+    : 0;
+  const largestOut = monthTx
+    .filter((t) => t.type === 'WITHDRAWAL')
+    .sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount))[0];
 
   const handleOpenAccount = async () => {
     setOpenAcctError('');
@@ -593,7 +657,7 @@ export default function Dashboard() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         {/* ── Hero ─────────────────────────────────────────────────────── */}
-        <div className="relative bg-gradient-to-br from-[#041f1c] via-[#063b36] to-[#0a5a52] rounded-2xl p-5 sm:p-8 overflow-hidden">
+        <div className="relative bg-gradient-to-br from-[#041f1c] via-[#063b36] to-[#0a5a52] rounded-2xl p-5 sm:p-8 overflow-hidden premium-enter">
           <div className="pointer-events-none absolute -top-10 -right-10 w-48 h-48 rounded-full bg-[#7CFC00]/5" />
           <div className="pointer-events-none absolute bottom-0 left-1/3 w-32 h-32 rounded-full bg-white/[0.03]" />
           <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -637,13 +701,22 @@ export default function Dashboard() {
         </div>
 
         {/* ── Balance Chart ─────────────────────────────────────────────── */}
-        <BalanceChart transactions={allTx} accounts={accounts} />
+        <div className="premium-enter premium-enter-delay-1">
+          <BalanceChart transactions={allTx} accounts={accounts} />
+        </div>
 
         {/* ── Monthly Cash Flow ─────────────────────────────────────────── */}
-        <SpendingRing deposits={monthDeposits} withdrawals={monthWithdrawals} />
+        <div className="premium-enter premium-enter-delay-2">
+          <SpendingRing deposits={monthDeposits} withdrawals={monthWithdrawals} />
+        </div>
+
+        {/* ── Forecast ─────────────────────────────────────────────────── */}
+        <div className="premium-enter premium-enter-delay-2">
+          <ForecastCard balance={totalBalance} transactions={allTx.slice(0, 120)} />
+        </div>
 
         {/* ── Quick actions ─────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4 sm:mt-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4 sm:mt-5 premium-enter premium-enter-delay-3">
           {[
             { label: 'Transfer', onClick: () => setShowTransferModal(true), bg: 'bg-emerald-50 dark:bg-emerald-900/20', fg: 'text-emerald-700 dark:text-emerald-400', icon: <ArrowLeftRight size={16} /> },
             { label: 'Deposit',  onClick: () => navigate('/deposit'),       bg: 'bg-sky-50 dark:bg-sky-900/20',     fg: 'text-sky-700 dark:text-sky-400',     icon: <PlusCircle size={16} />    },
@@ -835,33 +908,42 @@ export default function Dashboard() {
                 <p className="text-xs text-slate-400">Make your first transaction to see insights.</p>
               ) : (
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                      <span className="text-xs text-slate-500 dark:text-white/50">↑ Deposited</span>
+                  <div className="flex items-start gap-2 rounded-xl border border-slate-100 dark:border-white/10 p-3">
+                    <TrendingUp size={14} className="text-emerald-600 mt-0.5" />
+                    <div>
+                      <p className="text-[11px] font-semibold text-slate-700 dark:text-white/80">
+                        Net {monthlyNet >= 0 ? 'up' : 'down'} {asMoney(Math.abs(monthlyNet))}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        {monthlyNet >= 0
+                          ? 'Great momentum. Keep this pace for a strong month close.'
+                          : 'Outflows currently exceed inflows. Consider tightening discretionary spend.'}
+                      </p>
                     </div>
-                    <span className="text-xs font-bold text-emerald-600">
-                      +${monthDeposits.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-                      <span className="text-xs text-slate-500 dark:text-white/50">↓ Withdrawn</span>
+
+                  <div className="flex items-start gap-2 rounded-xl border border-slate-100 dark:border-white/10 p-3">
+                    <TriangleAlert size={14} className={`${outDeltaPct > 15 ? 'text-amber-500' : 'text-slate-400'} mt-0.5`} />
+                    <div>
+                      <p className="text-[11px] font-semibold text-slate-700 dark:text-white/80">
+                        Spend pace {outDeltaPct >= 0 ? '+' : ''}{outDeltaPct.toFixed(1)}% vs last month
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        {prevMonthOut > 0
+                          ? `Previous month withdrawals were ${asMoney(prevMonthOut)}.`
+                          : 'No prior month baseline yet; insights will sharpen over time.'}
+                      </p>
                     </div>
-                    <span className="text-xs font-bold text-red-500">
-                      -${monthWithdrawals.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </span>
                   </div>
-                  <div className="pt-3 border-t border-slate-50 dark:border-white/5 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${monthlyNet >= 0 ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                      <span className="text-xs text-slate-500 dark:text-white/50">Net this month</span>
+
+                  {largestOut && (
+                    <div className="pt-2 border-t border-slate-50 dark:border-white/5 flex justify-between items-center">
+                      <span className="text-xs text-slate-500 dark:text-white/50">Largest withdrawal</span>
+                      <span className="text-xs font-bold text-red-500 tabular-nums">
+                        -{asMoney(parseFloat(largestOut.amount))}
+                      </span>
                     </div>
-                    <span className={`text-xs font-bold ${monthlyNet >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {monthlyNet >= 0 ? '+' : ''}${monthlyNet.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
+                  )}
                 </div>
               )}
             </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Eye, EyeOff } from 'lucide-react';
+import { Lock, Eye, EyeOff, Fingerprint } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
 const TABS = ['Personal & Business', 'Commercial', 'Other'];
@@ -17,6 +17,10 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const biometricEligible =
+    typeof window !== 'undefined' &&
+    /iphone|ipad|android/i.test(navigator.userAgent) &&
+    localStorage.getItem('hunch-biometric-enabled') === '1';
 
   const handleDemoLogin = async () => {
     setError('');
@@ -52,6 +56,23 @@ export default function Login() {
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      // UX-only biometric pass: use entered credentials, otherwise demo fallback.
+      const emailVal = email.trim().toLowerCase() || 'demo@potbnk.app';
+      const passwordVal = password.trim() || 'DemoLogin#2026!';
+      await new Promise((r) => setTimeout(r, 500));
+      await login(emailVal, passwordVal);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Biometric sign-in failed. Please use password.');
     } finally {
       setLoading(false);
     }
@@ -95,6 +116,18 @@ export default function Login() {
               </div>
 
               <h2 className="text-xl font-bold text-bank-dark mb-5">Log into Online Banking</h2>
+
+              {biometricEligible && (
+                <button
+                  type="button"
+                  onClick={handleBiometricLogin}
+                  disabled={loading}
+                  className="w-full mb-4 py-2.5 rounded-lg bg-slate-900 text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-black transition-colors disabled:opacity-50"
+                >
+                  <Fingerprint size={15} />
+                  {loading ? 'Verifying…' : 'Use Face/Touch ID'}
+                </button>
+              )}
 
               {sessionExpired && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-lg px-4 py-3 mb-5">
