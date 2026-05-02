@@ -9,9 +9,10 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => getAuthToken());
 
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (identity, password) => {
+    const normalizedIdentity = (identity || '').trim().toLowerCase();
     const params = new URLSearchParams();
-    params.append('username', email);
+    params.append('username', normalizedIdentity);
     params.append('password', password);
     const { data } = await api.post('/auth/login', params, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

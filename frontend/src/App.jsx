@@ -9,7 +9,10 @@ import Withdraw from './pages/Withdraw'
 import Deposit from './pages/Deposit'
 import Settings from './pages/Settings'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminRoute from './components/AdminRoute'
 import NotFound from './pages/NotFound'
+import AdminLogin from './pages/AdminLogin'
+import AdminDashboard from './pages/AdminDashboard'
 
 // Marketing / public pages
 import BankHub from './pages/bank/BankHub'
@@ -42,6 +45,7 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
 
       {/* Personal banking hubs */}
       <Route path="/bank" element={<BankHub />} />
@@ -102,6 +106,10 @@ export default function App() {
       <Route
         path="/settings"
         element={<ProtectedRoute><Settings /></ProtectedRoute>}
+      />
+      <Route
+        path="/admin"
+        element={<AdminRoute><AdminDashboard /></AdminRoute>}
       />
 
       <Route path="*" element={<NotFound />} />

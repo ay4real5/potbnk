@@ -52,3 +52,16 @@ class Transaction(Base):
 
 	sender_account = relationship("Account", foreign_keys=[sender_id], back_populates="sent_transactions")
 	receiver_account = relationship("Account", foreign_keys=[receiver_id], back_populates="received_transactions")
+
+
+class AdminAuditLog(Base):
+	__tablename__ = "admin_audit_logs"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	actor_email = Column(String(255), nullable=False, index=True)
+	action = Column(String(80), nullable=False, index=True)
+	target_type = Column(String(80), nullable=False)
+	target_id = Column(String(120), nullable=False, index=True)
+	details = Column(Text, nullable=True)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+

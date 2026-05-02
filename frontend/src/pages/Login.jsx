@@ -236,6 +236,9 @@ export default function Login() {
                 <Link to="/forgot-password" className="text-xs text-bank-teal hover:underline font-medium">
                   Forgot Password?
                 </Link>
+                <Link to="/admin/login" className="text-xs text-gray-500 hover:text-bank-dark hover:underline font-medium sm:ml-auto">
+                  Admin Access
+                </Link>
               </div>
 
               {/* Enroll section */}

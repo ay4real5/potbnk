@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     demo_login_full_name: str = "Demo User"
     demo_login_user_id: str = "00000000-0000-4000-8000-000000000001"
 
+    # Admin access fallback
+    admin_login_enabled: bool = False
+    admin_login_email: str = "admin@potbnk.app"
+    admin_login_password: str = "ChangeThisAdminPassword!"
+    admin_login_full_name: str = "Platform Administrator"
+
     # Supabase
     supabase_url: str | None = None
     supabase_publishable_key: str | None = None

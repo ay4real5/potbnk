@@ -7,6 +7,9 @@ import os
 
 # Override env vars before any app code is imported
 os.environ.setdefault("SECRET_KEY", "ci-test-secret-key-not-for-production")
+os.environ.setdefault("ADMIN_LOGIN_ENABLED", "true")
+os.environ.setdefault("ADMIN_LOGIN_EMAIL", "admin@potbnk.app")
+os.environ.setdefault("ADMIN_LOGIN_PASSWORD", "AdminTest#2026")
 os.environ["DATABASE_URL"] = os.getenv(
     "TEST_DATABASE_URL",
     "postgresql://postgres:postgres@localhost:5433/bankapp_test",

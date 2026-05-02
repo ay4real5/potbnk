@@ -66,6 +66,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             headers={"WWW-Authenticate": "Bearer"}
         )
     subject = payload.get("sub")
+    role = payload.get("role", "user")
 
     # Check demo user before touching the database
     if settings.demo_login_enabled and subject == settings.demo_login_user_id:
@@ -75,6 +76,19 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             email=settings.demo_login_email,
             created_at=datetime.now(timezone.utc),
             hashed_password="",
+            role="user",
+            is_admin=False,
+        )
+
+    if settings.admin_login_enabled and role == "admin" and subject == _normalize_email(settings.admin_login_email):
+        return SimpleNamespace(
+            id=uuid.uuid5(uuid.NAMESPACE_DNS, subject),
+            full_name=settings.admin_login_full_name,
+            email=subject,
+            created_at=datetime.now(timezone.utc),
+            hashed_password="",
+            role="admin",
+            is_admin=True,
         )
 
     db = SessionLocal(bind=get_engine())
@@ -162,6 +176,20 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
             "expires_in": 1800,
         }
 
+    if settings.admin_login_enabled and normalized_email == _normalize_email(settings.admin_login_email):
+        if form_data.password != settings.admin_login_password:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password.",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+        token = create_access_token(data={"sub": normalized_email, "role": "admin"})
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "expires_in": 1800,
+        }
+
     db = SessionLocal(bind=get_engine())
     try:
         user = db.query(User).filter(User.email == normalized_email).first()
@@ -190,7 +218,9 @@ def get_me(current_user: User = Depends(get_current_user)):
         "id": current_user.id,
         "full_name": current_user.full_name,
         "email": current_user.email,
-        "created_at": str(current_user.created_at)
+        "created_at": str(current_user.created_at),
+        "role": getattr(current_user, "role", "user"),
+        "is_admin": bool(getattr(current_user, "is_admin", False)),
     }
 
 

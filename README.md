@@ -27,6 +27,13 @@ Frontend variables:
 - VITE_SUPABASE_URL
 - VITE_SUPABASE_PUBLISHABLE_KEY
 
+Optional admin access variables:
+
+- ADMIN_LOGIN_ENABLED=true
+- ADMIN_LOGIN_EMAIL=admin@yourdomain.com
+- ADMIN_LOGIN_PASSWORD=use-a-strong-unique-password
+- ADMIN_LOGIN_FULL_NAME=Platform Administrator
+
 Security rule:
 
 - Never expose SUPABASE_SERVICE_ROLE_KEY to browser code.
@@ -53,6 +60,13 @@ Security rule:
 3. Open browser devtools and confirm API calls go to /api/...
 4. Call GET /api/health and expect {"status":"healthy"}.
 5. Call authenticated GET /api/integrations/supabase/status and expect status ok.
+
+## Admin Access
+
+- Admin login URL: /admin/login
+- Admin console URL: /admin
+- Access control: only users authenticated via admin credentials can open admin routes.
+- Keep admin credentials only in server environment variables, never in frontend code.
 
 ## Local Development
 

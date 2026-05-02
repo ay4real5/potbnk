@@ -182,19 +182,19 @@ export default function Landing() {
         <div className="absolute inset-0 bg-bank-dark/50" />
 
         {/* Content — vertically & horizontally centered */}
-        <div className="relative z-10 flex flex-col items-center text-center gap-5 px-4">
+        <div className="relative z-10 flex flex-col items-center text-center gap-3 px-4 pt-20 sm:pt-24 md:pt-28">
           {/* Curved WELCOME wordmark */}
-          <div className="w-[min(86vw,860px)]">
+          <div className="w-[min(76vw,700px)] max-w-[700px]">
             <svg viewBox="0 0 900 280" className="w-full h-auto" aria-hidden="true">
               <defs>
-                <path id="welcome-arc" d="M80 210 Q450 34 820 210" />
+                <path id="welcome-arc" d="M120 208 Q450 72 780 208" />
               </defs>
               <text
                 fill="#8fdb46"
-                fontSize="122"
+                fontSize="102"
                 fontWeight="700"
                 fontStyle="italic"
-                letterSpacing="7"
+                letterSpacing="6"
                 style={{ textShadow: '0 10px 30px rgba(143,219,70,0.25)' }}
               >
                 <textPath href="#welcome-arc" startOffset="50%" textAnchor="middle">
@@ -204,11 +204,11 @@ export default function Landing() {
             </svg>
           </div>
 
-          <p className="text-white/70 text-xs font-bold uppercase tracking-[0.35em] mt-1">
+          <p className="text-white/78 text-[11px] font-semibold uppercase tracking-[0.22em] mt-1">
             WELCOME TO HUNCH BANK
           </p>
 
-          <p className="text-white/55 text-sm max-w-lg leading-relaxed text-center px-2">
+          <p className="text-white/86 text-[22px] max-w-4xl leading-snug text-center px-2 font-medium mt-1">
             Hunch Bank is more than checking, more than savings, more than
             lending. It&apos;s people who understand where you&apos;re coming from, with
             the know-how to get you where you want to be.
@@ -216,7 +216,7 @@ export default function Landing() {
 
           <Link
             to="/open-account"
-            className="mt-2 bg-[#4ade80] hover:bg-green-400 text-bank-dark font-bold px-9 py-3 rounded-full transition-colors text-sm"
+            className="mt-4 bg-[#8fdb46] hover:brightness-105 text-bank-dark font-bold px-10 py-3.5 rounded-full transition-colors text-[30px] leading-none"
           >
             Open an Account Online
           </Link>

@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.models import models
-from app.api.routes import auth, accounts, supabase
+from app.api.routes import auth, accounts, supabase, admin
 
 # ── Structured logging ────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -99,6 +99,7 @@ async def log_requests(request: Request, call_next):
 app.include_router(auth.router)
 app.include_router(accounts.router)
 app.include_router(supabase.router)
+app.include_router(admin.router)
 
 
 @app.get("/", tags=["System"])

@@ -26,6 +26,8 @@ class UserProfile(BaseModel):
     full_name: str
     email: str
     created_at: str
+    role: str = "user"
+    is_admin: bool = False
 
     model_config = {"from_attributes": True}
 
