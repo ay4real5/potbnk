@@ -204,19 +204,19 @@ export default function Landing() {
             </svg>
           </div>
 
-          <p className="text-white/78 text-[11px] font-semibold uppercase tracking-[0.22em] mt-1">
+          <p className="text-white text-[11px] font-semibold uppercase tracking-[0.22em] mt-1" style={{ color: '#ffffff' }}>
             WELCOME TO HUNCH BANK
           </p>
 
-          <p className="text-white/86 text-[22px] max-w-4xl leading-snug text-center px-2 font-medium mt-1">
-            Hunch Bank is more than checking, more than savings, more than
+          <p className="text-white text-[22px] max-w-4xl leading-snug text-center px-2 font-medium mt-1" style={{ color: '#ffffff' }}>
+            Huntington Bank is more than checking, more than savings, more than
             lending. It&apos;s people who understand where you&apos;re coming from, with
             the know-how to get you where you want to be.
           </p>
 
           <Link
             to="/open-account"
-            className="mt-4 bg-[#8fdb46] hover:brightness-105 text-bank-dark font-bold px-10 py-3.5 rounded-full transition-colors text-[30px] leading-none"
+            className="mt-4 bg-[#8fdb46] hover:brightness-105 text-bank-dark font-bold px-7 sm:px-8 py-2.5 rounded-full transition-colors text-[15px] sm:text-[16px] leading-none"
           >
             Open an Account Online
           </Link>
@@ -234,27 +234,27 @@ export default function Landing() {
       </section>
 
       {/* ── Crafted products rail ── */}
-      <section id="products" className="bg-gradient-to-r from-[#043d3c] via-[#064547] to-[#0a4748] py-16 sm:py-20">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-center text-4xl sm:text-5xl font-bold text-white mb-3 font-display">
-            Crafted for us
+      <section id="products" className="bg-[#014745] py-14 sm:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <h2 className="text-left sm:text-center text-[clamp(2.15rem,10.5vw,2.85rem)] sm:text-5xl font-medium text-white mb-3 font-serif leading-[1.03]">
+            Care is crafted into everything we do
           </h2>
-          <p className="text-center text-white/75 mb-10 max-w-2xl mx-auto text-lg">
+          <p className="text-left sm:text-center text-white/75 mb-8 sm:mb-10 max-w-2xl sm:mx-auto text-base sm:text-lg">
             Financial products tailored for how we live, build, protect, and grow together.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {products.slice(0, 8).map((item) => (
               <Link
                 to={item.href}
                 key={item.name}
-                className="group bg-[#2a676d]/75 hover:bg-[#357880] rounded-2xl p-5 transition-all border border-white/10 hover:border-white/30 flex items-start justify-between gap-3 min-h-[120px]"
+                className="group bg-[#055f64] hover:bg-[#0a6b71] rounded-2xl px-4 py-4 sm:p-5 transition-all border border-white/10 hover:border-white/30 flex items-start justify-between gap-3 min-h-[92px] sm:min-h-[120px]"
               >
                 <div>
-                  <p className="text-white text-xl sm:text-2xl font-semibold leading-tight">
+                  <p className="text-white text-[clamp(1.8rem,8.5vw,2.2rem)] sm:text-2xl font-serif leading-[1.04] sm:leading-tight break-words">
                     {item.name}
                   </p>
                 </div>
-                <span className="text-white/85 text-2xl leading-none group-hover:translate-x-1 transition-transform">›</span>
+                <span className="text-white/85 text-3xl sm:text-2xl leading-none group-hover:translate-x-1 transition-transform">›</span>
               </Link>
             ))}
           </div>

@@ -170,6 +170,51 @@ const BUSINESS_OFFER_LINKS = [
   { title: 'Business Checking', href: '/business/checking' },
 ];
 
+const PERSONAL_MOBILE_OFFER_LINKS = {
+  Bank: [
+    { title: 'Checking Accounts', href: '/bank/checking' },
+    { title: 'Savings Accounts', href: '/bank/savings' },
+    { title: 'Credit Cards', href: '/bank/credit-cards' },
+    { title: 'Home, auto and personal loans', href: '/borrow' },
+    { title: 'Investing and financial advising', href: '/grow' },
+    { title: 'Retirement planning and trusts', href: '/plan' },
+    { title: 'Home, auto and life insurance', href: '/protect' },
+    { title: 'Business Checking', href: '/business/checking' },
+  ],
+  Borrow: [
+    { title: 'Mortgage Loans', href: '/borrow/mortgages' },
+    { title: 'Auto Loans', href: '/borrow/auto-loans' },
+    { title: 'Personal Loans', href: '/borrow/personal-loans' },
+    { title: 'Credit Cards', href: '/bank/credit-cards' },
+  ],
+  Grow: [
+    { title: 'Savings Accounts', href: '/bank/savings' },
+    { title: 'Investing and financial advising', href: '/grow' },
+    { title: 'Learn Hub', href: '/learn' },
+  ],
+  Plan: [
+    { title: 'Retirement planning and trusts', href: '/plan' },
+    { title: 'Private banking support', href: '/plan' },
+    { title: 'Estate and legacy planning', href: '/plan/trusts' },
+  ],
+  Protect: [
+    { title: 'Home, auto and life insurance', href: '/protect' },
+    { title: 'Fraud and identity protection', href: '/protect' },
+    { title: 'Security resources', href: '/support' },
+  ],
+  Learn: [
+    { title: 'Financial education articles', href: '/learn' },
+    { title: 'Credit and budgeting tools', href: '/learn' },
+    { title: 'Private Bank Insights', href: '/learn' },
+  ],
+};
+
+const MOBILE_FOOTER_LINKS = [
+  { title: 'About Hunch', href: '/about' },
+  { title: 'Find a Branch or ATM', href: '/locations' },
+  { title: 'Customer Service', href: '/support' },
+];
+
 const NAV_CATEGORIES = ['Bank', 'Borrow', 'Grow', 'Plan', 'Protect', 'Learn'];
 
 // ── Mega-menu panel ───────────────────────────────────────────────────────────
@@ -545,11 +590,17 @@ export default function Navbar({ overlay = false }) {
   const [activeTab, setActiveTab] = useState('Personal');
   const [openMenu, setOpenMenu]   = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileCategory, setMobileCategory] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const loginRef = useRef(null);
   const closeTimer = useRef(null);
   const overlayGuest = overlay && !user;
+
+  const closeMobileMenu = useCallback(() => {
+    setMobileCategory(null);
+    setMobileOpen(false);
+  }, []);
 
   const handleLogout = () => { logout(); navigate('/'); };
 
@@ -579,6 +630,10 @@ export default function Navbar({ overlay = false }) {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) setMobileCategory(null);
+  }, [mobileOpen]);
 
   return (
     <header className={overlayGuest ? 'absolute top-0 left-0 right-0 z-50 bg-transparent' : 'sticky top-0 z-50 bg-bank-dark'}>
@@ -674,7 +729,17 @@ export default function Navbar({ overlay = false }) {
                 </div>
               </div>
             )}
-            <button className="md:hidden text-white" onClick={() => setMobileOpen((o) => !o)} aria-label="Menu">
+            <button
+              className="md:hidden text-white"
+              onClick={() => {
+                if (mobileOpen) {
+                  closeMobileMenu();
+                  return;
+                }
+                setMobileOpen(true);
+              }}
+              aria-label="Menu"
+            >
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
@@ -719,37 +784,139 @@ export default function Navbar({ overlay = false }) {
 
       {/* ── Mobile menu ── */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-white/10 px-4 py-4 flex flex-col gap-3">
+        <div className="md:hidden border-t border-white/10 bg-bank-dark px-5 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-col gap-4 min-h-[calc(100vh-104px)] overflow-y-auto">
           {user ? (
             <>
-              <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="text-white/80 text-sm flex items-center gap-2"><LayoutDashboard size={15}/>Dashboard</Link>
-              <Link to="/transfer"  onClick={() => setMobileOpen(false)} className="text-white/80 text-sm flex items-center gap-2"><ArrowLeftRight size={15}/>Transfer</Link>
-              <Link to="/withdraw"  onClick={() => setMobileOpen(false)} className="text-white/80 text-sm flex items-center gap-2"><MinusCircle size={15}/>Withdraw</Link>
+              <Link to="/dashboard" onClick={closeMobileMenu} className="text-white/80 text-sm flex items-center gap-2"><LayoutDashboard size={15}/>Dashboard</Link>
+              <Link to="/transfer"  onClick={closeMobileMenu} className="text-white/80 text-sm flex items-center gap-2"><ArrowLeftRight size={15}/>Transfer</Link>
+              <Link to="/withdraw"  onClick={closeMobileMenu} className="text-white/80 text-sm flex items-center gap-2"><MinusCircle size={15}/>Withdraw</Link>
               <button onClick={handleLogout} className="text-white/70 text-sm text-left flex items-center gap-2"><LogOut size={15}/>Sign out</button>
             </>
           ) : (
             <>
-              <div className="flex gap-4">
-                {['Personal','Business'].map((t)=>(
-                  <button key={t} onClick={()=>{setActiveTab(t);setMobileOpen(false);}} className={`text-sm font-semibold ${activeTab===t?'text-white underline':'text-white/60'}`}>{t}</button>
-                ))}
-              </div>
-              <div className="border-t border-white/10 pt-3 flex flex-col gap-2">
-                {NAV_CATEGORIES.map(c=>(
+              {!mobileCategory ? (
+                <>
+                  <div className="grid grid-cols-2 gap-8 max-w-[280px]">
+                    {['Personal', 'Business'].map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`pb-2 text-[18px] font-bold border-b-2 transition-colors ${
+                          activeTab === tab
+                            ? 'text-white border-[#d0ea76]'
+                            : 'text-white/75 border-transparent'
+                        }`}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-col gap-1 pt-1">
+                    {NAV_CATEGORIES.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setMobileCategory(cat)}
+                        className="w-full py-2 text-left text-[clamp(2.5rem,12vw,3.15rem)] leading-[0.95] font-serif text-white flex items-center justify-between gap-3"
+                      >
+                        <span>{cat}</span>
+                        <ChevronRight size={28} className="text-white/90 shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="pt-3 border-t border-white/20 flex flex-col gap-4">
+                    {MOBILE_FOOTER_LINKS.map((item) => (
+                      <Link
+                        key={item.title}
+                        to={item.href}
+                        onClick={closeMobileMenu}
+                        className="text-white text-[18px] font-medium"
+                      >
+                        {item.title}
+                      </Link>
+                    ))}
+                  </div>
+
                   <Link
-                    key={c}
-                    to={CATEGORY_ROUTES[c]}
-                    onClick={()=>setMobileOpen(false)}
-                    className="text-white/70 text-sm hover:text-white transition-colors"
+                    to="/open-account"
+                    onClick={closeMobileMenu}
+                    className="pt-4 text-white text-[clamp(2.2rem,11vw,2.8rem)] leading-[0.95] font-bold underline underline-offset-4"
                   >
-                    {c}
+                    Open an account
                   </Link>
-                ))}
-              </div>
-              <div className="border-t border-white/10 pt-3 flex flex-col gap-2">
-                <Link to="/login"       onClick={()=>setMobileOpen(false)} className="text-white text-sm font-medium">Sign in</Link>
-                <Link to="/open-account" onClick={()=>setMobileOpen(false)} className="bg-[#4ade80] text-bank-dark text-sm font-bold px-5 py-2.5 rounded-full text-center">Open an account</Link>
-              </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setMobileCategory(null)}
+                      className="text-white/90 hover:text-white transition-colors"
+                      aria-label="Back"
+                    >
+                      <ChevronRight size={24} className="rotate-180" />
+                    </button>
+
+                    <div className="flex items-center gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setSearchOpen(true)}
+                        className="text-white/90 hover:text-white transition-colors"
+                        aria-label="Search"
+                      >
+                        <Search size={22} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={closeMobileMenu}
+                        className="text-white/90 hover:text-white transition-colors"
+                        aria-label="Close menu"
+                      >
+                        <X size={24} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {activeTab === 'Business' ? (
+                    <div className="space-y-4 pt-2">
+                      {BUSINESS_CARDS.map((card) => (
+                        <article
+                          key={card.title}
+                          className="bg-[#055f64] rounded-2xl px-5 py-5 border border-white/10"
+                        >
+                          <p className="text-[#8fdb46] text-[16px] tracking-wide mb-2">{card.tag}</p>
+                          <h3 className="text-white font-serif text-[clamp(2.2rem,10vw,3.1rem)] leading-[0.95] mb-4 break-words">{card.title}</h3>
+                          <Link
+                            to={card.href}
+                            onClick={closeMobileMenu}
+                            className="inline-flex items-center justify-center rounded-full border-2 border-white/75 text-white text-[clamp(1.45rem,6vw,1.7rem)] font-bold px-6 py-2.5"
+                          >
+                            Continue
+                          </Link>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3 pt-2">
+                      <h3 className="text-white font-serif text-[clamp(2.3rem,10.5vw,3.3rem)] leading-[0.96] pr-2">
+                        Care is crafted into everything we do
+                      </h3>
+                      {(PERSONAL_MOBILE_OFFER_LINKS[mobileCategory] || BUSINESS_OFFER_LINKS).map((item) => (
+                        <Link
+                          key={item.title}
+                          to={item.href}
+                          onClick={closeMobileMenu}
+                          className="group bg-[#055f64] rounded-2xl px-5 py-4 border border-white/10 flex items-center justify-between gap-3"
+                        >
+                          <span className="text-white text-[clamp(1.8rem,8.4vw,2.25rem)] leading-[1.03] font-serif break-words">{item.title}</span>
+                          <ChevronRight size={26} className="text-white/90 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </>
           )}
         </div>
