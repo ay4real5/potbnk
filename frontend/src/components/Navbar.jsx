@@ -702,13 +702,13 @@ export default function Navbar({ overlay = false }) {
           <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2.5 shrink-0">
             <LogoMark />
             <span className="text-white font-bold text-xl tracking-tight">
-              Hunch<span className="text-[#4ade80]">.</span>
+              Hunch Bank
             </span>
           </Link>
 
           {/* Center – Personal / Business (guest) OR app links (logged in) */}
           {!user ? (
-            <div className="flex-1 flex justify-center items-stretch self-stretch">
+            <div className="hidden md:flex flex-1 justify-center items-stretch self-stretch">
               {['Personal', 'Business'].map((tab) => (
                 <button
                   key={tab}
