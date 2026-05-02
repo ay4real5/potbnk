@@ -136,9 +136,27 @@ const MEGA_MENUS = {
 };
 
 const BUSINESS_CARDS = [
-  { tag: 'GROWING BUSINESS',           title: 'Start-up to scale-up'                       },
-  { tag: 'ESTABLISHED ENTERPRISE',     title: 'Mid to large corporations'                  },
-  { tag: 'GOVERNMENT & PUBLIC SECTOR', title: 'Government, education, and non-profit'      },
+  {
+    tag: 'GROWING BUSINESS',
+    title: 'Start-up to scale-up',
+    desc: 'Business checking, card controls, and credit lines designed for fast-moving teams and founders.',
+    cta: 'Explore startup banking',
+    href: '/business/checking',
+  },
+  {
+    tag: 'ESTABLISHED ENTERPRISE',
+    title: 'Mid to large corporations',
+    desc: 'Treasury management, payment workflows, and relationship-led commercial lending for complex operations.',
+    cta: 'Explore enterprise solutions',
+    href: '/business/treasury',
+  },
+  {
+    tag: 'GOVERNMENT & PUBLIC SECTOR',
+    title: 'Government, education, and non-profit',
+    desc: 'Dedicated public-sector banking support for municipalities, schools, and mission-driven organizations.',
+    cta: 'Talk to a specialist',
+    href: '/contact',
+  },
 ];
 
 const NAV_CATEGORIES = ['Bank', 'Borrow', 'Grow', 'Plan', 'Protect', 'Learn'];
@@ -226,18 +244,33 @@ function MegaPanel({ cat, isPersonal }) {
   if (!isPersonal) {
     return (
       <div className="bg-[#163d2e] rounded-2xl p-6 shadow-2xl">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {BUSINESS_CARDS.map((c) => (
-            <div key={c.title} className="bg-[#0d3426] rounded-xl p-6 flex flex-col gap-14">
+            <div key={c.title} className="bg-[#0d3426] rounded-xl p-6 flex flex-col justify-between gap-7 min-h-[290px]">
               <div>
                 <p className="text-[#4ade80] text-[11px] font-bold uppercase tracking-widest mb-3">{c.tag}</p>
                 <h3 className="text-white text-2xl font-bold leading-snug">{c.title}</h3>
+                <p className="text-white/55 text-sm leading-relaxed mt-4">{c.desc}</p>
               </div>
-              <button className="w-fit border border-white/70 rounded-full px-5 py-2 text-white text-sm font-semibold hover:bg-white hover:text-bank-dark transition-colors">
-                Continue
-              </button>
+              <Link
+                to={c.href}
+                className="w-fit border border-white/70 rounded-full px-5 py-2 text-white text-sm font-semibold hover:bg-white hover:text-bank-dark transition-colors"
+              >
+                {c.cta}
+              </Link>
             </div>
           ))}
+        </div>
+        <div className="mt-4 rounded-xl border border-white/10 bg-[#0f3a2b] px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <p className="text-white/70 text-xs">
+            Need tailored support for your industry? Our business banking team can build a custom plan.
+          </p>
+          <Link
+            to="/contact"
+            className="text-[#4ade80] text-xs font-semibold hover:text-white transition-colors"
+          >
+            Request a consultation →
+          </Link>
         </div>
       </div>
     );
@@ -363,7 +396,7 @@ function LoginDropdown({ onClose }) {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState(0);
-  const [form, setForm] = useState({ username: '', password: '', companyId: '', userId: '', bizPass: '' });
+  const [form, setForm] = useState({ email: '', password: '', companyId: '', userId: '', bizPass: '' });
   const [showPass, setShowPass] = useState(false);
   const [showBizPass, setShowBizPass] = useState(false);
   const [error, setError] = useState('');
@@ -374,9 +407,14 @@ function LoginDropdown({ onClose }) {
   const handlePersonalLogin = async (e) => {
     e.preventDefault();
     setError('');
+    const normalizedEmail = form.email.trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+      setError('Please enter the email address used for your account.');
+      return;
+    }
     setLoading(true);
     try {
-      await login(form.username, form.password);
+      await login(normalizedEmail, form.password);
       onClose();
       navigate('/dashboard');
     } catch (err) {
@@ -420,7 +458,7 @@ function LoginDropdown({ onClose }) {
             {error && (
               <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
             )}
-            <FloatInput id="username" label="Username" value={form.username} onChange={set('username')} />
+            <FloatInput id="email" label="Email" value={form.email} onChange={set('email')} />
             <FloatInput
               id="password" label="Password" type={showPass ? 'text' : 'password'}
               value={form.password} onChange={set('password')}
