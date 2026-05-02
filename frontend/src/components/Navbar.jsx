@@ -6,7 +6,7 @@ import {
   PiggyBank, RefreshCw, Handshake, Shield, Home, DollarSign,
   CreditCard, Calculator, TrendingUp, MapPin, Trophy,
   ShieldCheck, Lock, CheckSquare, Info, Monitor, ChevronRight, Map,
-  Eye, EyeOff, ChevronDown,
+  Eye, EyeOff,
 } from 'lucide-react';
 
 // ── Logo ─────────────────────────────────────────────────────────────────────
@@ -437,26 +437,26 @@ function FloatInput({ id, label, type = 'text', value, onChange, suffix }) {
 }
 
 function MobileLoginTypeControl({ activeTab, setActiveTab, onLogin }) {
-  const fieldId = 'mobile-login-type';
-
   return (
     <section className="w-full rounded-2xl border border-white/15 bg-white/[0.06] p-3.5">
       <p className="text-[10px] uppercase tracking-[0.18em] text-white/55 mb-2">Mobile login</p>
-      <label htmlFor={fieldId} className="block text-[11px] font-semibold text-white/85 mb-1.5">
-        Personal or Business
-      </label>
+      <p className="text-[11px] font-semibold text-white/85 mb-2">Choose profile</p>
 
-      <div className="relative">
-        <select
-          id={fieldId}
-          value={activeTab}
-          onChange={(e) => setActiveTab(e.target.value)}
-          className="w-full h-11 appearance-none rounded-xl border border-white/25 bg-[#0b5a5e] px-3 pr-10 text-white text-[15px] font-semibold focus:outline-none focus:ring-2 focus:ring-[#8fdb46]/60"
-        >
-          <option value="Personal" className="text-bank-dark">Personal</option>
-          <option value="Business" className="text-bank-dark">Business</option>
-        </select>
-        <ChevronDown size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/75" />
+      <div className="inline-flex w-full rounded-full border border-white/25 bg-[#0b5a5e] p-1">
+        {['Personal', 'Business'].map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`h-9 flex-1 rounded-full text-[14px] font-bold transition-colors ${
+              activeTab === tab
+                ? 'bg-[#8fdb46] text-bank-dark'
+                : 'text-white/85 hover:text-white'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
       <Link
