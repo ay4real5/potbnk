@@ -71,6 +71,11 @@ const features = [
 export default function Landing() {
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiInput, setAiInput] = useState('');
+  const [aiMsgs, setAiMsgs] = useState([
+    { role: 'ai', text: 'Hi, I am Hunch AI. I can help you pick the right account in seconds.' },
+  ]);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -101,6 +106,25 @@ export default function Landing() {
     }
     v.pause();
     setIsPlaying(false);
+  };
+
+  const answerAi = (q) => {
+    const lq = q.toLowerCase();
+    if (lq.includes('checking')) return 'For everyday spending, Checking Accounts are best. If you run a company, Business Checking is a stronger fit.';
+    if (lq.includes('loan')) return 'For financing, choose Mortgage/Auto/Personal Loans from Borrow, or Business Loans if this is for your company.';
+    if (lq.includes('save') || lq.includes('savings')) return 'Savings Accounts are best for short-to-mid goals. For long-term growth, pair with investing guidance.';
+    if (lq.includes('business')) return 'For business needs, start with Business Checking, then add Treasury and Lending as you scale.';
+    return 'I can help with checking, savings, loans, business banking, and opening an account.';
+  };
+
+  const sendAi = (preset) => {
+    const q = (preset || aiInput).trim();
+    if (!q) return;
+    setAiMsgs((m) => [...m, { role: 'user', text: q }]);
+    setAiInput('');
+    setTimeout(() => {
+      setAiMsgs((m) => [...m, { role: 'ai', text: answerAi(q) }]);
+    }, 260);
   };
 
   return (
@@ -168,7 +192,15 @@ export default function Landing() {
           </svg>
 
           {/* WELCOME */}
-          <h1 className="text-[13vw] sm:text-7xl md:text-9xl font-black uppercase" style={{ color: '#4ade80', letterSpacing: '0.1em' }}>
+          <h1
+            className="text-[13vw] sm:text-7xl md:text-9xl font-black uppercase font-display italic"
+            style={{
+              color: '#8fdb46',
+              letterSpacing: '0.06em',
+              transform: 'rotate(-8deg)',
+              textShadow: '0 8px 35px rgba(143,219,70,0.25)',
+            }}
+          >
             WELCOME
           </h1>
 
@@ -218,7 +250,6 @@ export default function Landing() {
                 className="group bg-[#2a676d]/75 hover:bg-[#357880] rounded-2xl p-5 transition-all border border-white/10 hover:border-white/30 flex items-start justify-between gap-3 min-h-[120px]"
               >
                 <div>
-                  <p className="text-3xl mb-2">{item.icon}</p>
                   <p className="text-white text-xl sm:text-2xl font-semibold leading-tight">
                     {item.name}
                   </p>
@@ -355,6 +386,58 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* ── Landing AI assistant ── */}
+      <button
+        type="button"
+        onClick={() => setAiOpen((o) => !o)}
+        className="fixed right-4 bottom-4 z-40 w-12 h-12 rounded-full bg-[#8fdb46] text-bank-dark font-black shadow-xl hover:brightness-105 transition-all"
+        aria-label="Toggle Hunch AI"
+      >
+        AI
+      </button>
+      {aiOpen && (
+        <div className="fixed right-4 bottom-20 z-40 w-[calc(100vw-2rem)] max-w-sm h-[430px] rounded-2xl overflow-hidden border border-white/15 shadow-2xl bg-[#072e2d] text-white">
+          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+            <p className="text-sm font-semibold">Hunch AI Assistant</p>
+            <button type="button" onClick={() => setAiOpen(false)} className="text-white/60 hover:text-white">×</button>
+          </div>
+          <div className="h-[320px] overflow-y-auto px-3 py-3 space-y-2">
+            {aiMsgs.map((m, i) => (
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${m.role === 'user' ? 'bg-[#8fdb46] text-bank-dark' : 'bg-white/10 text-white/85'}`}>
+                  {m.text}
+                </div>
+              </div>
+            ))}
+            <div className="pt-1 flex gap-1.5 flex-wrap">
+              {['Best checking option', 'Need a business account', 'Which loan should I choose?'].map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => sendAi(chip)}
+                  className="text-[10px] px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="px-3 py-3 border-t border-white/10 flex gap-2">
+            <input
+              type="text"
+              value={aiInput}
+              onChange={(e) => setAiInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') sendAi(); }}
+              placeholder="Ask about accounts, loans, business…"
+              className="flex-1 rounded-xl bg-white/10 border border-white/15 px-3 py-2 text-xs focus:outline-none focus:border-white/30"
+            />
+            <button type="button" onClick={() => sendAi()} className="px-3 rounded-xl bg-[#8fdb46] text-bank-dark text-xs font-semibold">
+              Send
+            </button>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

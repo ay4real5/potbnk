@@ -259,24 +259,6 @@ function MegaPanel({ cat, isPersonal }) {
           Care is crafted into everything we do
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
-          {BUSINESS_CARDS.map((c) => (
-            <div key={c.title} className="bg-[#0d3426] rounded-xl p-6 flex flex-col justify-between gap-7 min-h-[290px]">
-              <div>
-                <p className="text-[#4ade80] text-[11px] font-bold uppercase tracking-widest mb-3">{c.tag}</p>
-                <h3 className="text-white text-2xl font-bold leading-snug">{c.title}</h3>
-                <p className="text-white/55 text-sm leading-relaxed mt-4">{c.desc}</p>
-              </div>
-              <Link
-                to={c.href}
-                className="w-fit border border-white/70 rounded-full px-5 py-2 text-white text-sm font-semibold hover:bg-white hover:text-bank-dark transition-colors"
-              >
-                {c.cta}
-              </Link>
-            </div>
-          ))}
-        </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {BUSINESS_OFFER_LINKS.map((item) => (
             <Link
