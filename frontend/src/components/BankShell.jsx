@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Bell, Menu, X, Moon, Sun } from 'lucide-react';
+import { Bell, Menu, X, Moon, Sun, User, Settings, Shield, LogOut } from 'lucide-react';
 import api from '../api/client';
 
 function timeAgo(dateStr) {
@@ -41,8 +41,10 @@ export default function BankShell({ children, title }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const bellRef = useRef(null);
+  const profileRef = useRef(null);
 
   const [dark, setDark] = useState(() => {
     try { return localStorage.getItem('hunch-theme') === 'dark'; } catch { return false; }
@@ -66,6 +68,22 @@ export default function BankShell({ children, title }) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [bellOpen]);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    const onPointer = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
+    };
+    const onEscape = (e) => {
+      if (e.key === 'Escape') setProfileOpen(false);
+    };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onEscape);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onEscape);
+    };
+  }, [profileOpen]);
 
   const handleLogout = () => { logout(); navigate('/'); };
 
@@ -175,13 +193,49 @@ export default function BankShell({ children, title }) {
               )}
             </div>
 
-            <button
-              onClick={handleLogout}
-              title="Sign out"
-              className="w-8 h-8 rounded-full bg-[#7CFC00] flex items-center justify-center text-[#041f1c] text-xs font-bold hover:brightness-110 transition-all"
-            >
-              {initials}
-            </button>
+            <div className="relative" ref={profileRef}>
+              <button
+                onClick={() => setProfileOpen((o) => !o)}
+                title="Account menu"
+                className="w-8 h-8 rounded-full bg-[#7CFC00] flex items-center justify-center text-[#041f1c] text-xs font-bold hover:brightness-110 transition-all"
+              >
+                {initials}
+              </button>
+              {profileOpen && (
+                <div className="absolute right-0 top-11 z-50 w-64 bg-white dark:bg-[#111a18] rounded-2xl shadow-xl border border-slate-100 dark:border-white/10 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-100 dark:border-white/10">
+                    <p className="text-xs font-semibold text-slate-700 dark:text-white/80 truncate">{user?.full_name || 'Account'}</p>
+                    <p className="text-[11px] text-slate-400 truncate mt-0.5">{user?.email || 'Signed in'}</p>
+                  </div>
+                  <div className="p-2">
+                    <button
+                      onClick={() => { setProfileOpen(false); navigate('/settings'); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-white/70 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <User size={14} /> Profile
+                    </button>
+                    <button
+                      onClick={() => { setProfileOpen(false); navigate('/settings'); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-white/70 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <Settings size={14} /> Preferences
+                    </button>
+                    <button
+                      onClick={() => { setProfileOpen(false); navigate('/settings'); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-white/70 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <Shield size={14} /> Security Center
+                    </button>
+                    <button
+                      onClick={() => { setProfileOpen(false); handleLogout(); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      <LogOut size={14} /> Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <button
               className="md:hidden w-9 h-9 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
