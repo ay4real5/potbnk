@@ -183,16 +183,8 @@ export default function Landing() {
 
         {/* Content — vertically & horizontally centered */}
         <div className="relative z-10 flex flex-col items-center text-center gap-5 px-4">
-          {/* Hexagon H logo */}
-          <svg viewBox="0 0 160 180" className="w-28 h-28 sm:w-48 sm:h-48 mb-2 opacity-50" fill="none">
-            <polygon points="80,4 152,44 152,136 80,176 8,136 8,44"  stroke="#4ade80" strokeWidth="2.5" fill="none" />
-            <polygon points="80,24 136,56 136,124 80,156 24,124 24,56" stroke="#4ade80" strokeWidth="1.5" fill="none" opacity="0.5" />
-            <text x="50%" y="56%" dominantBaseline="middle" textAnchor="middle"
-              fontSize="70" fontWeight="900" fill="#4ade80" fontFamily="Inter,system-ui,sans-serif">H</text>
-          </svg>
-
           {/* Curved WELCOME wordmark */}
-          <div className="w-[min(86vw,860px)] -mt-2">
+          <div className="w-[min(86vw,860px)]">
             <svg viewBox="0 0 900 280" className="w-full h-auto" aria-hidden="true">
               <defs>
                 <path id="welcome-arc" d="M80 210 Q450 34 820 210" />

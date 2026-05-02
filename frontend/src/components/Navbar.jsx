@@ -648,24 +648,22 @@ export default function Navbar() {
                 <LogOut size={15} /> Sign out
               </button>
             ) : (
-              <div className="hidden md:flex items-center gap-3">
-                <button aria-label="Search" onClick={() => setSearchOpen(true)} className="text-white/60 hover:text-white transition-colors"><Search size={18} /></button>
+              <div className="hidden md:flex items-center gap-5">
                 {/* Login dropdown trigger */}
                 <div className="relative" ref={loginRef}>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-4">
                     <Link
                       to="/open-account"
-                      className="text-white text-sm font-medium underline underline-offset-2 hover:text-white/80 transition-colors"
+                      className="text-white text-sm font-semibold underline underline-offset-4 hover:text-white/80 transition-colors"
                     >
                       Open an account
                     </Link>
-                    <span className="text-white/30 text-sm mx-1">|</span>
                     <button
                       onClick={() => setLoginOpen((v) => !v)}
-                      className={`text-sm font-semibold px-5 py-1.5 rounded-md border transition-colors ${
+                      className={`text-sm font-bold px-9 py-4 rounded-[20px] border transition-colors ${
                         loginOpen
-                          ? 'bg-white text-bank-dark border-white'
-                          : 'text-white border-white/60 hover:border-white'
+                          ? 'bg-[#8fdb46] text-bank-dark border-[#8fdb46]'
+                          : 'bg-[#8fdb46] text-bank-dark border-[#8fdb46] hover:brightness-105'
                       }`}
                     >
                       Login
