@@ -641,10 +641,10 @@ export default function Navbar({ overlay = false }) {
 
       {/* ── Top utility bar ── */}
       <div className={overlayGuest ? 'border-b border-white/10 bg-bank-dark' : 'border-b border-white/10'}>
-        <div className="max-w-7xl mx-auto px-6 h-9 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-1.5 flex items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-white/60 border border-white/30 px-1.5 py-0.5 rounded-sm tracking-wide">FDIC</span>
-            <span className="text-[11px] text-white/60 hidden sm:block">
+            <span className="text-[10px] sm:text-[11px] text-white/70 leading-tight">
               FDIC-Insured — Backed by the full faith and credit of the U.S. Government
             </span>
           </div>
@@ -729,6 +729,14 @@ export default function Navbar({ overlay = false }) {
                 </div>
               </div>
             )}
+            {!user && (
+              <Link
+                to="/login"
+                className="md:hidden bg-[#8fdb46] hover:brightness-105 text-bank-dark text-sm font-bold px-4 py-2 rounded-xl transition-colors"
+              >
+                Login
+              </Link>
+            )}
             <button
               className="md:hidden text-white"
               onClick={() => {
@@ -798,7 +806,7 @@ export default function Navbar({ overlay = false }) {
                 <>
                   <div className="max-w-[280px]">
                     <label htmlFor="mobile-segment" className="block text-[10px] uppercase tracking-[0.16em] text-white/60 mb-2">
-                      Banking View
+                      Login Type
                     </label>
                     <select
                       id="mobile-segment"
@@ -809,6 +817,13 @@ export default function Navbar({ overlay = false }) {
                       <option value="Personal" className="text-bank-dark">Personal</option>
                       <option value="Business" className="text-bank-dark">Business</option>
                     </select>
+                    <Link
+                      to="/login"
+                      onClick={closeMobileMenu}
+                      className="mt-3 inline-flex items-center justify-center rounded-full bg-[#8fdb46] text-bank-dark text-sm font-bold px-5 py-2.5"
+                    >
+                      Login to {activeTab}
+                    </Link>
                   </div>
 
                   <div className="flex flex-col gap-1 pt-1">
@@ -879,7 +894,7 @@ export default function Navbar({ overlay = false }) {
 
                   <div className="max-w-[280px]">
                     <label htmlFor="mobile-segment-sub" className="block text-[10px] uppercase tracking-[0.16em] text-white/60 mb-2">
-                      Banking View
+                      Login Type
                     </label>
                     <select
                       id="mobile-segment-sub"
@@ -890,6 +905,13 @@ export default function Navbar({ overlay = false }) {
                       <option value="Personal" className="text-bank-dark">Personal</option>
                       <option value="Business" className="text-bank-dark">Business</option>
                     </select>
+                    <Link
+                      to="/login"
+                      onClick={closeMobileMenu}
+                      className="mt-3 inline-flex items-center justify-center rounded-full bg-[#8fdb46] text-bank-dark text-sm font-bold px-5 py-2.5"
+                    >
+                      Login to {activeTab}
+                    </Link>
                   </div>
 
                   {activeTab === 'Business' ? (

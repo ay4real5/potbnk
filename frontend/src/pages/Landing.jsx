@@ -208,10 +208,10 @@ export default function Landing() {
             WELCOME TO HUNCH BANK
           </p>
 
-          <p className="text-white text-[10px] sm:text-[11px] max-w-4xl leading-relaxed text-center px-2 font-medium mt-1" style={{ color: '#ffffff' }}>
-            Hunch Bank is more than checking, more than savings, more than
-            lending. It&apos;s people who understand where you&apos;re coming from, with
-            the know-how to get you where you want to be.
+          <p className="text-white text-[15px] sm:text-[18px] lg:text-[27px] max-w-[1040px] leading-[1.3] text-center px-2 font-medium mt-1" style={{ color: '#ffffff' }}>
+            Hunch Bank is more than checking, more than savings, more than lending.
+            <br className="hidden md:block" />
+            It&apos;s people who understand where you&apos;re coming from, with the know-how to get you where you want to be.
           </p>
 
           <Link
