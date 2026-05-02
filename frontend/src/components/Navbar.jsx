@@ -585,27 +585,25 @@ export default function Navbar({ overlay = false }) {
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
 
       {/* ── Top utility bar ── */}
-      {!overlayGuest && (
-        <div className="border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-6 h-9 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-white/60 border border-white/30 px-1.5 py-0.5 rounded-sm tracking-wide">FDIC</span>
-              <span className="text-[11px] text-white/60 hidden sm:block">
-                FDIC-Insured — Backed by the full faith and credit of the U.S. Government
-              </span>
-            </div>
-            <nav className="hidden md:flex items-center gap-6">
-              {[
-                { lbl: 'About Hunch',     href: '/about' },
-                { lbl: 'Find a Branch',   href: '/locations' },
-                { lbl: 'Customer Service', href: '/support' },
-              ].map(({ lbl, href }) => (
-                <Link key={lbl} to={href} className="text-[11px] text-white/70 hover:text-white transition-colors">{lbl}</Link>
-              ))}
-            </nav>
+      <div className={overlayGuest ? 'border-b border-white/10 bg-bank-dark' : 'border-b border-white/10'}>
+        <div className="max-w-7xl mx-auto px-6 h-9 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-white/60 border border-white/30 px-1.5 py-0.5 rounded-sm tracking-wide">FDIC</span>
+            <span className="text-[11px] text-white/60 hidden sm:block">
+              FDIC-Insured — Backed by the full faith and credit of the U.S. Government
+            </span>
           </div>
+          <nav className="hidden md:flex items-center gap-6">
+            {[
+              { lbl: 'About Hunch',     href: '/about' },
+              { lbl: 'Find a Branch',   href: '/locations' },
+              { lbl: 'Customer Service', href: '/support' },
+            ].map(({ lbl, href }) => (
+              <Link key={lbl} to={href} className="text-[11px] text-white/70 hover:text-white transition-colors">{lbl}</Link>
+            ))}
+          </nav>
         </div>
-      )}
+      </div>
 
       {/* ── Main nav row ── */}
       <div>
