@@ -159,6 +159,17 @@ const BUSINESS_CARDS = [
   },
 ];
 
+const BUSINESS_OFFER_LINKS = [
+  { title: 'Checking Accounts', href: '/business/checking' },
+  { title: 'Savings Accounts', href: '/business/savings' },
+  { title: 'Credit Cards', href: '/business/credit-cards' },
+  { title: 'Home, auto and personal loans', href: '/borrow' },
+  { title: 'Investing and financial advising', href: '/grow' },
+  { title: 'Retirement planning and trusts', href: '/plan' },
+  { title: 'Home, auto and life insurance', href: '/protect' },
+  { title: 'Business Checking', href: '/business/checking' },
+];
+
 const NAV_CATEGORIES = ['Bank', 'Borrow', 'Grow', 'Plan', 'Protect', 'Learn'];
 
 // ── Mega-menu panel ───────────────────────────────────────────────────────────
@@ -244,7 +255,11 @@ function MegaPanel({ cat, isPersonal }) {
   if (!isPersonal) {
     return (
       <div className="bg-[#163d2e] rounded-2xl p-6 shadow-2xl">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <h3 className="text-center text-white text-3xl md:text-5xl font-display font-semibold mb-6">
+          Care is crafted into everything we do
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
           {BUSINESS_CARDS.map((c) => (
             <div key={c.title} className="bg-[#0d3426] rounded-xl p-6 flex flex-col justify-between gap-7 min-h-[290px]">
               <div>
@@ -261,16 +276,18 @@ function MegaPanel({ cat, isPersonal }) {
             </div>
           ))}
         </div>
-        <div className="mt-4 rounded-xl border border-white/10 bg-[#0f3a2b] px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <p className="text-white/70 text-xs">
-            Need tailored support for your industry? Our business banking team can build a custom plan.
-          </p>
-          <Link
-            to="/contact"
-            className="text-[#4ade80] text-xs font-semibold hover:text-white transition-colors"
-          >
-            Request a consultation →
-          </Link>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {BUSINESS_OFFER_LINKS.map((item) => (
+            <Link
+              key={item.title}
+              to={item.href}
+              className="group bg-[#2a676d]/80 hover:bg-[#357880] rounded-xl px-4 py-4 border border-white/10 hover:border-white/25 transition-colors flex items-start justify-between gap-3 min-h-[92px]"
+            >
+              <span className="text-white text-lg leading-snug font-semibold">{item.title}</span>
+              <ChevronRight size={18} className="text-white/85 mt-1 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          ))}
         </div>
       </div>
     );

@@ -148,10 +148,7 @@ export default function Landing() {
           poster="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1600&q=80"
           className="absolute inset-0 w-full h-full object-cover opacity-50"
         >
-          <source
-            src="https://cdn.coverr.co/videos/coverr-working-from-home-1579/1080p.mp4"
-            type="video/mp4"
-          />
+          <source src="/hero-loop.mp4" type="video/mp4" />
           <source
             src="https://videos.pexels.com/video-files/3571264/3571264-hd_1920_1080_25fps.mp4"
             type="video/mp4"
@@ -204,27 +201,29 @@ export default function Landing() {
         </button>
       </section>
 
-      {/* ── Products grid ── */}
-      <section id="products" className="bg-white py-20">
+      {/* ── Crafted products rail ── */}
+      <section id="products" className="bg-gradient-to-r from-[#043d3c] via-[#064547] to-[#0a4748] py-16 sm:py-20">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-center text-3xl font-bold text-bank-dark mb-3">
-            Built around what matters most
+          <h2 className="text-center text-4xl sm:text-5xl font-bold text-white mb-3 font-display">
+            Crafted for us
           </h2>
-          <p className="text-center text-gray-500 mb-12 max-w-xl mx-auto">
-            Choose the right product for where you are in life — and where you&apos;re headed.
+          <p className="text-center text-white/75 mb-10 max-w-2xl mx-auto text-lg">
+            Financial products tailored for how we live, build, protect, and grow together.
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            {products.map((item) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {products.slice(0, 8).map((item) => (
               <Link
                 to={item.href}
                 key={item.name}
-                className="group border border-gray-200 hover:border-bank-dark rounded-xl p-5 transition-all hover:shadow-md flex flex-col items-center text-center gap-2"
+                className="group bg-[#2a676d]/75 hover:bg-[#357880] rounded-2xl p-5 transition-all border border-white/10 hover:border-white/30 flex items-start justify-between gap-3 min-h-[120px]"
               >
-                <span className="text-3xl">{item.icon}</span>
-                <span className="text-sm font-semibold text-bank-dark group-hover:text-bank-mid transition-colors">
-                  {item.name}
-                </span>
-                <span className="text-xs text-gray-400 leading-snug">{item.desc}</span>
+                <div>
+                  <p className="text-3xl mb-2">{item.icon}</p>
+                  <p className="text-white text-xl sm:text-2xl font-semibold leading-tight">
+                    {item.name}
+                  </p>
+                </div>
+                <span className="text-white/85 text-2xl leading-none group-hover:translate-x-1 transition-transform">›</span>
               </Link>
             ))}
           </div>
