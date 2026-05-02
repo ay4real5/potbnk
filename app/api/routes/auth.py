@@ -76,8 +76,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             email=settings.demo_login_email,
             created_at=datetime.now(timezone.utc),
             hashed_password="",
-            role="user",
-            is_admin=False,
+            role="admin",
+            is_admin=True,
         )
 
     if settings.admin_login_enabled and role == "admin" and subject == _normalize_email(settings.admin_login_email):
@@ -169,7 +169,7 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
                 detail="Invalid email or password.",
                 headers={"WWW-Authenticate": "Bearer"}
             )
-        token = create_access_token(data={"sub": settings.demo_login_user_id})
+        token = create_access_token(data={"sub": settings.demo_login_user_id, "role": "admin"})
         return {
             "access_token": token,
             "token_type": "bearer",
