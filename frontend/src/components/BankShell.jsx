@@ -93,7 +93,7 @@ export default function BankShell({ children, title }) {
     <div className="min-h-screen flex flex-col bg-[#f0f4f2] dark:bg-[#0a0f0e] transition-colors duration-300 overflow-x-hidden">
 
       <div className="w-full bg-[#041f1c] text-center py-1 px-8">
-        <span className="text-[10px] text-white/50 tracking-wide">
+        <span className="text-[9px] text-white/50 tracking-[0.18em] uppercase">
           FDIC-Insured — Backed by the full faith and credit of the U.S. Government
         </span>
       </div>
@@ -103,7 +103,7 @@ export default function BankShell({ children, title }) {
 
           <Link to="/dashboard" className="flex items-center gap-2.5 shrink-0">
             <LogoMark />
-            <span className="text-white font-bold text-xl tracking-tight">Hunch.</span>
+            <span className="text-white font-bold text-xl tracking-tight font-display">Hunch.</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
@@ -115,7 +115,7 @@ export default function BankShell({ children, title }) {
                 <Link
                   key={href}
                   to={href}
-                  className={`text-sm font-medium px-3 py-1 rounded-full transition-all ${
+                  className={`text-sm font-semibold px-3 py-1 rounded-full transition-all ${
                     active ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                 >
@@ -131,7 +131,7 @@ export default function BankShell({ children, title }) {
             <button
               onClick={() => setDark((d) => !d)}
               title={dark ? 'Light mode' : 'Dark mode'}
-              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
             >
               {dark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
@@ -139,7 +139,7 @@ export default function BankShell({ children, title }) {
             <div className="relative" ref={bellRef}>
               <button
                 onClick={() => setBellOpen((o) => !o)}
-                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors relative"
+                className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/10 text-white/60 hover:text-white transition-colors relative"
               >
                 <Bell size={17} />
                 {notifications.length > 0 && (
@@ -184,7 +184,7 @@ export default function BankShell({ children, title }) {
             </button>
 
             <button
-              className="md:hidden w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+              className="md:hidden w-9 h-9 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
               onClick={() => setMobileOpen((o) => !o)}
             >
               {mobileOpen ? <X size={18} /> : <Menu size={18} />}

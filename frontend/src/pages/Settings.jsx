@@ -178,7 +178,7 @@ export default function Settings() {
     <BankShell title="Settings">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Account Settings</h1>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-white font-display">Account Settings</h1>
           <p className="text-slate-400 text-sm mt-1">Manage your profile, security, and preferences</p>
         </div>
 
@@ -186,7 +186,7 @@ export default function Settings() {
 
           {/* Left nav */}
           <div className="lg:col-span-1 space-y-2">
-            <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-4 shadow-sm premium-enter">
+            <div className="premium-card p-4 premium-enter">
               {TABS.map(({ id, icon: Icon, label }) => (
                 <button key={id} onClick={() => setActiveTab(id)} className={navItemCls(id)}>
                   <Icon size={15} />
@@ -196,7 +196,7 @@ export default function Settings() {
             </div>
 
             {/* Profile summary card */}
-            <div className="bg-[#063b36] rounded-2xl p-4 text-white premium-enter premium-enter-delay-1">
+            <div className="bg-[#063b36] rounded-2xl p-4 text-white premium-enter premium-enter-delay-1 shadow-lg shadow-[#041f1c]/20">
               <div className="w-12 h-12 rounded-full bg-[#7CFC00] flex items-center justify-center text-[#041f1c] font-bold text-lg mb-3">
                 {initials}
               </div>

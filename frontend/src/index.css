@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,11 +6,18 @@
 
 @layer base {
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   body {
     @apply bg-white text-bank-dark;
+    letter-spacing: 0.005em;
+    line-height: 1.45;
+  }
+  h1, h2, h3 {
+    font-family: 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif;
+    letter-spacing: -0.02em;
   }
 }
 
@@ -52,6 +59,15 @@
 .hero-blob-1 { animation: hero-blob     10s ease-in-out infinite; }
 .hero-blob-2 { animation: hero-blob-alt 14s ease-in-out infinite; }
 .hero-blob-3 { animation: hero-blob-slow 18s ease-in-out infinite; }
+
+.premium-card {
+  @apply bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm;
+}
+
+.premium-icon-chip {
+  @apply w-10 h-10 rounded-xl flex items-center justify-center border border-slate-100 dark:border-white/10
+         bg-gradient-to-br from-white to-slate-50 dark:from-[#15201d] dark:to-[#111a18];
+}
 
 /* ── Premium motion system ─────────────────────────────────────────────── */
 @keyframes premium-fade-up {

@@ -186,7 +186,7 @@ export default function Transactions() {
         {/* Header row */}
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Transaction History</h1>
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-white font-display">Transaction History</h1>
             {account && (
               <p className="text-sm text-slate-400 mt-0.5">
                 {account.account_type} &middot; {account.account_number} &mdash; Balance: <span className="font-semibold text-slate-700 dark:text-white/70">${parseFloat(account.available_balance ?? account.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
@@ -341,7 +341,7 @@ export default function Transactions() {
                         </td>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-2.5">
-                            <div className={'w-7 h-7 rounded-full flex items-center justify-center shrink-0 ' + (tx.type === 'DEPOSIT' ? 'bg-emerald-50 dark:bg-emerald-900/20' : tx.type === 'WITHDRAWAL' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-sky-50 dark:bg-sky-900/20')}>
+                            <div className={'premium-icon-chip w-8 h-8 rounded-xl shrink-0 ' + (tx.type === 'DEPOSIT' ? 'bg-emerald-50 dark:bg-emerald-900/20' : tx.type === 'WITHDRAWAL' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-sky-50 dark:bg-sky-900/20')}>
                               <TxIcon type={tx.type} />
                             </div>
                             <span className="font-medium text-slate-700 dark:text-white/70 truncate max-w-[160px]">

@@ -666,7 +666,7 @@ export default function Dashboard() {
                 {greeting()}, {user?.full_name?.split(' ')[0] ?? 'there'}
               </p>
               <p className="text-[10px] uppercase tracking-[2.5px] text-white/30 mb-3">Total Balance · USD</p>
-              <p className="text-4xl sm:text-5xl font-bold tracking-tight text-white leading-none tabular-nums">
+              <p className="text-4xl sm:text-5xl font-bold tracking-tight text-white leading-none tabular-nums font-display">
                 {balanceDollars}<span className="text-xl sm:text-2xl text-white/50">.{balanceCents}</span>
               </p>
               <div className="flex items-center gap-2.5 mt-3 flex-wrap">
@@ -728,7 +728,7 @@ export default function Dashboard() {
               onClick={onClick}
               className="flex flex-col items-center gap-1.5 sm:gap-2 py-3 sm:py-4 px-2 sm:px-3 bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
             >
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center ${bg} ${fg}`}>
+              <div className={`premium-icon-chip ${bg} ${fg}`}>
                 {icon}
               </div>
               <span className="text-[11px] font-semibold text-slate-600 dark:text-white/60">{label}</span>
@@ -742,7 +742,7 @@ export default function Dashboard() {
           {/* Col 1: My Accounts */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[10px] font-bold uppercase tracking-[1.5px] text-slate-400">My Accounts</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-[1.8px] text-slate-400">My Accounts</h3>
               {!showOpenAcct && (
                 <button
                   onClick={() => { setShowOpenAcct(true); setOpenAcctSuccess(''); setOpenAcctError(''); }}
@@ -811,7 +811,7 @@ export default function Dashboard() {
           {/* Col 2: Recent Activity */}
           <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50 dark:border-white/5">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-white/80">Recent Activity</h3>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-white/80 font-display">Recent Activity</h3>
               <Link to="/transactions" className="text-[11px] font-semibold text-[#16a34a] hover:text-[#15803d] transition-colors">
                 View all →
               </Link>

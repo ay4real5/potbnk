@@ -8,7 +8,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        display: ['Sora', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
         serif: ['Georgia', 'Times New Roman', 'serif'],
       },
       colors: {
