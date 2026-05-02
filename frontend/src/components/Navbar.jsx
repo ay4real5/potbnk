@@ -796,20 +796,19 @@ export default function Navbar({ overlay = false }) {
             <>
               {!mobileCategory ? (
                 <>
-                  <div className="grid grid-cols-2 gap-8 max-w-[280px]">
-                    {['Personal', 'Business'].map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`pb-2 text-[18px] font-bold border-b-2 transition-colors ${
-                          activeTab === tab
-                            ? 'text-white border-[#d0ea76]'
-                            : 'text-white/75 border-transparent'
-                        }`}
-                      >
-                        {tab}
-                      </button>
-                    ))}
+                  <div className="max-w-[280px]">
+                    <label htmlFor="mobile-segment" className="block text-[10px] uppercase tracking-[0.16em] text-white/60 mb-2">
+                      Banking View
+                    </label>
+                    <select
+                      id="mobile-segment"
+                      value={activeTab}
+                      onChange={(e) => setActiveTab(e.target.value)}
+                      className="w-full h-11 rounded-xl border border-white/25 bg-white/10 px-4 text-white text-[15px] font-semibold focus:outline-none focus:ring-2 focus:ring-[#8fdb46]/60"
+                    >
+                      <option value="Personal" className="text-bank-dark">Personal</option>
+                      <option value="Business" className="text-bank-dark">Business</option>
+                    </select>
                   </div>
 
                   <div className="flex flex-col gap-1 pt-1">
@@ -876,6 +875,21 @@ export default function Navbar({ overlay = false }) {
                         <X size={24} />
                       </button>
                     </div>
+                  </div>
+
+                  <div className="max-w-[280px]">
+                    <label htmlFor="mobile-segment-sub" className="block text-[10px] uppercase tracking-[0.16em] text-white/60 mb-2">
+                      Banking View
+                    </label>
+                    <select
+                      id="mobile-segment-sub"
+                      value={activeTab}
+                      onChange={(e) => setActiveTab(e.target.value)}
+                      className="w-full h-11 rounded-xl border border-white/25 bg-white/10 px-4 text-white text-[15px] font-semibold focus:outline-none focus:ring-2 focus:ring-[#8fdb46]/60"
+                    >
+                      <option value="Personal" className="text-bank-dark">Personal</option>
+                      <option value="Business" className="text-bank-dark">Business</option>
+                    </select>
                   </div>
 
                   {activeTab === 'Business' ? (

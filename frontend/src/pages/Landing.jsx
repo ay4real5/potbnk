@@ -208,8 +208,8 @@ export default function Landing() {
             WELCOME TO HUNCH BANK
           </p>
 
-          <p className="text-white text-[22px] max-w-4xl leading-snug text-center px-2 font-medium mt-1" style={{ color: '#ffffff' }}>
-            Huntington Bank is more than checking, more than savings, more than
+          <p className="text-white text-[10px] sm:text-[11px] max-w-4xl leading-relaxed text-center px-2 font-medium mt-1" style={{ color: '#ffffff' }}>
+            Hunch Bank is more than checking, more than savings, more than
             lending. It&apos;s people who understand where you&apos;re coming from, with
             the know-how to get you where you want to be.
           </p>
