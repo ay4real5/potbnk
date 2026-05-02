@@ -90,7 +90,7 @@ export default function BankShell({ children, title }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f0f4f2] dark:bg-[#0a0f0e] transition-colors duration-300">
+    <div className="min-h-screen flex flex-col bg-[#f0f4f2] dark:bg-[#0a0f0e] transition-colors duration-300 overflow-x-hidden">
 
       <div className="w-full bg-[#041f1c] text-center py-1 px-8">
         <span className="text-[10px] text-white/50 tracking-wide">
@@ -215,7 +215,7 @@ export default function BankShell({ children, title }) {
         )}
       </header>
 
-      <main className="flex-1">
+      <main className="flex-1 min-w-0">
         {children}
       </main>
     </div>

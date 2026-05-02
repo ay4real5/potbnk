@@ -40,7 +40,8 @@ function Sparkline({ values }) {
   });
   const fillPts = [...pts, `${W},${H}`, `0,${H}`].join(' ');
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+      className="hidden sm:block">
       <polyline points={pts.join(' ')} fill="none" stroke="rgba(124,252,0,0.7)"
         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       <polygon points={fillPts} fill="rgba(124,252,0,0.07)" />
@@ -510,8 +511,8 @@ export default function Dashboard() {
         <div className="relative bg-gradient-to-br from-[#041f1c] via-[#063b36] to-[#0a5a52] rounded-2xl p-5 sm:p-8 overflow-hidden">
           <div className="pointer-events-none absolute -top-10 -right-10 w-48 h-48 rounded-full bg-[#7CFC00]/5" />
           <div className="pointer-events-none absolute bottom-0 left-1/3 w-32 h-32 rounded-full bg-white/[0.03]" />
-          <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
-            <div>
+          <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[2px] text-white/45 mb-1">
                 {greeting()}, {user?.full_name?.split(' ')[0] ?? 'there'}
               </p>
@@ -530,7 +531,7 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
-            <div className="flex flex-col items-end gap-3 shrink-0">
+            <div className="flex flex-col items-start sm:items-end gap-3 shrink-0">
               <Sparkline values={sparkValues} />
               <div className="flex gap-2">
                 <button
@@ -554,7 +555,7 @@ export default function Dashboard() {
         <BalanceChart transactions={allTx} accounts={accounts} />
 
         {/* ── Quick actions ─────────────────────────────────────────────── */}
-        <div className="grid grid-cols-4 gap-2 sm:gap-3 mt-4 sm:mt-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4 sm:mt-5">
           {[
             { label: 'Transfer', onClick: () => setShowTransferModal(true), bg: 'bg-emerald-50 dark:bg-emerald-900/20', fg: 'text-emerald-700 dark:text-emerald-400', icon: <ArrowLeftRight size={16} /> },
             { label: 'Deposit',  onClick: () => navigate('/deposit'),       bg: 'bg-sky-50 dark:bg-sky-900/20',     fg: 'text-sky-700 dark:text-sky-400',     icon: <PlusCircle size={16} />    },
