@@ -585,7 +585,7 @@ export default function Navbar({ overlay = false }) {
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
 
       {/* ── Top utility bar ── */}
-      <div className={overlayGuest ? 'border-b border-white/15 bg-bank-dark/70 backdrop-blur-sm' : 'border-b border-white/10'}>
+      <div className={overlayGuest ? 'border-b border-white/10 bg-bank-dark/55 backdrop-blur-xl' : 'border-b border-white/10'}>
         <div className="max-w-7xl mx-auto px-6 h-9 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-white/60 border border-white/30 px-1.5 py-0.5 rounded-sm tracking-wide">FDIC</span>
@@ -606,8 +606,8 @@ export default function Navbar({ overlay = false }) {
       </div>
 
       {/* ── Main nav row ── */}
-      <div className={overlayGuest ? 'max-w-7xl mx-auto px-6 bg-bank-dark' : 'max-w-7xl mx-auto px-6'}>
-        <div className="h-16 flex items-center">
+      <div className={overlayGuest ? 'bg-bank-dark/55 backdrop-blur-xl border-b border-white/10' : ''}>
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center">
 
           {/* Logo */}
           <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2.5 shrink-0">
@@ -683,7 +683,7 @@ export default function Navbar({ overlay = false }) {
 
       {/* ── Category nav + mega-menu (guest desktop) ── */}
       {!user && (
-        <div className={overlayGuest ? 'relative hidden md:block bg-bank-dark' : 'relative hidden md:block'} onMouseLeave={startClose}>
+        <div className={overlayGuest ? 'relative hidden md:block bg-bank-dark/55 backdrop-blur-xl' : 'relative hidden md:block'} onMouseLeave={startClose}>
           <div className="border-t border-white/10">
             <div className="flex justify-center gap-1 h-11 items-center">
               {NAV_CATEGORIES.map((cat) => (
