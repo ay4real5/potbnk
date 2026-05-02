@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -68,6 +69,40 @@ const features = [
 ];
 
 export default function Landing() {
+  const videoRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    // Best-effort autoplay; keep muted+inline to satisfy mobile browser rules.
+    const start = async () => {
+      try {
+        await v.play();
+        setIsPlaying(true);
+      } catch {
+        setIsPlaying(false);
+      }
+    };
+    start();
+  }, []);
+
+  const toggleVideoPlayback = async () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) {
+      try {
+        await v.play();
+        setIsPlaying(true);
+      } catch {
+        setIsPlaying(false);
+      }
+      return;
+    }
+    v.pause();
+    setIsPlaying(false);
+  };
+
   return (
     <div className="min-h-screen font-sans">
       <Navbar />
@@ -104,19 +139,21 @@ export default function Landing() {
 
         {/* Video background — plays over blobs when loaded */}
         <video
+          ref={videoRef}
           autoPlay
           muted
           loop
           playsInline
+          preload="auto"
           poster="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1600&q=80"
           className="absolute inset-0 w-full h-full object-cover opacity-50"
         >
           <source
-            src="https://videos.pexels.com/video-files/3571264/3571264-hd_1920_1080_25fps.mp4"
+            src="https://cdn.coverr.co/videos/coverr-working-from-home-1579/1080p.mp4"
             type="video/mp4"
           />
           <source
-            src="https://videos.pexels.com/video-files/3194277/3194277-hd_1920_1080_25fps.mp4"
+            src="https://videos.pexels.com/video-files/3571264/3571264-hd_1920_1080_25fps.mp4"
             type="video/mp4"
           />
         </video>
@@ -155,6 +192,16 @@ export default function Landing() {
             Open an Account Online
           </Link>
         </div>
+
+        {/* Video playback control */}
+        <button
+          type="button"
+          onClick={toggleVideoPlayback}
+          aria-label={isPlaying ? 'Pause background video' : 'Play background video'}
+          className="absolute right-4 bottom-4 z-20 w-11 h-11 rounded-full border border-white/40 bg-black/35 text-white text-lg font-bold backdrop-blur-sm hover:bg-black/55 transition-colors"
+        >
+          {isPlaying ? '||' : '▶'}
+        </button>
       </section>
 
       {/* ── Products grid ── */}
