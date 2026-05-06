@@ -696,12 +696,12 @@ export default function Navbar({ overlay = false }) {
 
       {/* ── Main nav row ── */}
       <div>
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 md:h-16 flex items-center">
 
           {/* Logo */}
-          <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2.5 shrink-0">
+          <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             <LogoMark />
-            <span className="text-white font-bold text-xl tracking-tight">
+            <span className="text-white font-bold text-base sm:text-xl tracking-tight">
               Hunch Bank
             </span>
           </Link>
@@ -763,8 +763,16 @@ export default function Navbar({ overlay = false }) {
                 </div>
               </div>
             )}
+            {!user && (
+              <Link
+                to="/login"
+                className="md:hidden bg-[#8fdb46] hover:brightness-105 text-bank-dark text-[12px] font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+              >
+                Login
+              </Link>
+            )}
             <button
-              className="md:hidden text-white"
+              className="md:hidden text-white p-1"
               onClick={() => {
                 if (mobileOpen) {
                   closeMobileMenu();
