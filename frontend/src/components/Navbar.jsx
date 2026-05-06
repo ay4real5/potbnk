@@ -732,7 +732,7 @@ export default function Navbar({ overlay = false }) {
           )}
 
           {/* Right actions */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
             {user ? (
               <button onClick={handleLogout} className="hidden md:flex items-center gap-1.5 text-sm text-white/70 hover:text-red-400 transition-colors">
                 <LogOut size={15} /> Sign out
@@ -762,14 +762,6 @@ export default function Navbar({ overlay = false }) {
                   {loginOpen && <LoginDropdown onClose={() => setLoginOpen(false)} />}
                 </div>
               </div>
-            )}
-            {!user && (
-              <Link
-                to="/login"
-                className="md:hidden bg-[#8fdb46] hover:brightness-105 text-bank-dark text-sm font-bold px-4 py-2 rounded-xl transition-colors"
-              >
-                Login
-              </Link>
             )}
             <button
               className="md:hidden text-white"
