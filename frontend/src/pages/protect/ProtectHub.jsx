@@ -87,7 +87,7 @@ export default function ProtectHub() {
       {/* Hero */}
       <section className="bg-bank-dark py-20 px-4 text-center">
         <p className="text-[#4ade80] text-xs font-bold uppercase tracking-widest mb-3">Protect with Hunch</p>
-        <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
+        <h1 className="text-2xl sm:text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
           Stay protected,<br />
           <span className="text-[#4ade80]">stay ahead.</span>
         </h1>
@@ -118,7 +118,7 @@ export default function ProtectHub() {
       {/* Protection services */}
       <section className="bg-white py-20 px-4">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-bank-dark text-center mb-3">Layers of protection, built in</h2>
+          <h2 className="text-xl sm:text-3xl font-bold text-bank-dark text-center mb-3">Layers of protection, built in</h2>
           <p className="text-center text-gray-500 text-sm mb-12 max-w-lg mx-auto">
             Every Hunch account comes with core security features. Upgrade with optional coverage to protect even more.
           </p>
@@ -154,7 +154,7 @@ export default function ProtectHub() {
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-start">
           <div>
             <p className="text-bank-accent text-xs font-semibold uppercase tracking-widest mb-3">Stay Smart</p>
-            <h2 className="text-3xl font-bold text-bank-dark mb-8 leading-snug">
+            <h2 className="text-xl sm:text-3xl font-bold text-bank-dark mb-8 leading-snug">
               Five security habits that protect your account
             </h2>
             <ul className="space-y-6">
@@ -189,7 +189,7 @@ export default function ProtectHub() {
       {/* FAQ */}
       <section className="bg-white py-20 px-4">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold text-bank-dark text-center mb-4">Common security questions</h2>
+          <h2 className="text-xl sm:text-3xl font-bold text-bank-dark text-center mb-4">Common security questions</h2>
           <p className="text-center text-gray-500 text-sm mb-10">Answers to the questions we hear most.</p>
           <FAQ faqs={faqs} />
         </div>
@@ -197,7 +197,7 @@ export default function ProtectHub() {
 
       {/* CTA band */}
       <section className="bg-bank-dark py-16 px-4 text-center">
-        <h2 className="text-3xl font-bold text-white mb-4">Questions about your account security?</h2>
+        <h2 className="text-xl sm:text-3xl font-bold text-white mb-4">Questions about your account security?</h2>
         <p className="text-white/60 text-sm mb-8 max-w-md mx-auto">Our security team is available 24/7 — by phone, chat, or in branch.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link to="/contact" className="bg-[#4ade80] hover:bg-green-400 text-bank-dark font-bold px-8 py-3 rounded-full transition-colors text-sm">

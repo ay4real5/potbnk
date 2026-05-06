@@ -103,7 +103,7 @@ export default function LearnHub() {
       {/* Hero */}
       <section className="bg-bank-dark py-20 px-4 text-center">
         <p className="text-[#4ade80] text-xs font-bold uppercase tracking-widest mb-3">Hunch Learn</p>
-        <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
+        <h1 className="text-2xl sm:text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
           Knowledge that<br />
           <span className="text-[#4ade80]">moves you forward.</span>
         </h1>
@@ -210,7 +210,7 @@ export default function LearnHub() {
 
       {/* Newsletter CTA */}
       <section className="bg-bank-dark py-16 px-4 text-center">
-        <h2 className="text-3xl font-bold text-white mb-4">Stay informed with Hunch Insights</h2>
+        <h2 className="text-xl sm:text-3xl font-bold text-white mb-4">Stay informed with Hunch Insights</h2>
         <p className="text-white/60 text-sm mb-8 max-w-md mx-auto">
           Monthly financial tips, market updates, and practical guidance — delivered straight to your inbox.
         </p>

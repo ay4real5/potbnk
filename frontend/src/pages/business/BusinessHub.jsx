@@ -86,7 +86,7 @@ export default function BusinessHub() {
       {/* Hero */}
       <section className="bg-bank-dark py-20 px-4 text-center">
         <p className="text-[#4ade80] text-xs font-bold uppercase tracking-widest mb-3">Business Banking</p>
-        <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
+        <h1 className="text-2xl sm:text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
           Banking that<br />
           <span className="text-[#4ade80]">means business.</span>
         </h1>
@@ -128,7 +128,7 @@ export default function BusinessHub() {
       {/* Products */}
       <section className="bg-white py-20 px-4">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-bank-dark text-center mb-3">Everything your business needs in one place</h2>
+          <h2 className="text-xl sm:text-3xl font-bold text-bank-dark text-center mb-3">Everything your business needs in one place</h2>
           <p className="text-center text-gray-500 text-sm mb-12 max-w-lg mx-auto">
             Every product is designed to reduce complexity and help you focus on running your business.
           </p>
@@ -169,7 +169,7 @@ export default function BusinessHub() {
             { value: '4.8★', label: 'Business app rating' },
           ].map((s) => (
             <div key={s.label}>
-              <p className="text-3xl font-black text-bank-dark mb-1">{s.value}</p>
+              <p className="text-2xl sm:text-3xl font-black text-bank-dark mb-1">{s.value}</p>
               <p className="text-gray-400 text-xs uppercase tracking-wider">{s.label}</p>
             </div>
           ))}
@@ -178,7 +178,7 @@ export default function BusinessHub() {
 
       {/* CTA */}
       <section className="bg-bank-dark py-16 px-4 text-center">
-        <h2 className="text-3xl font-bold text-white mb-4">Let's build your business together.</h2>
+        <h2 className="text-xl sm:text-3xl font-bold text-white mb-4">Let's build your business together.</h2>
         <p className="text-white/60 text-sm mb-8 max-w-md mx-auto">
           Connect with a dedicated business banker who knows your industry.
         </p>

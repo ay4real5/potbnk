@@ -57,7 +57,7 @@ export default function BankHub() {
       {/* Hero */}
       <section className="bg-bank-dark py-20 px-4 text-center">
         <p className="text-[#4ade80] text-xs font-bold uppercase tracking-widest mb-3">Bank with Hunch</p>
-        <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
+        <h1 className="text-2xl sm:text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
           Your money,<br />
           <span className="text-[#4ade80]">your rules.</span>
         </h1>
@@ -77,7 +77,7 @@ export default function BankHub() {
       {/* Checking account cards */}
       <section className="bg-bank-surface py-20 px-4">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-bank-dark text-center mb-3">Choose your checking account</h2>
+          <h2 className="text-xl sm:text-3xl font-bold text-bank-dark text-center mb-3">Choose your checking account</h2>
           <p className="text-center text-gray-500 text-sm mb-12 max-w-lg mx-auto">All accounts include a free debit card, mobile check deposit, and 24/7 online access.</p>
           <div className="grid md:grid-cols-3 gap-6">
             {accounts.map((acct) => (
@@ -87,7 +87,7 @@ export default function BankHub() {
                   <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${acct.tagColor}`}>{acct.tag}</span>
                 </div>
                 <div className="mb-6">
-                  <span className="text-4xl font-black text-bank-dark">{acct.rate}</span>
+                  <span className="text-2xl sm:text-4xl font-black text-bank-dark">{acct.rate}</span>
                   <span className="text-gray-400 text-sm ml-1">{acct.rateLabel}</span>
                 </div>
                 <ul className="space-y-2.5 flex-1 mb-8">
@@ -110,7 +110,7 @@ export default function BankHub() {
       {/* More banking products */}
       <section className="bg-white py-20 px-4">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-bank-dark mb-3">More ways to bank with Hunch</h2>
+          <h2 className="text-xl sm:text-3xl font-bold text-bank-dark mb-3">More ways to bank with Hunch</h2>
           <p className="text-gray-500 text-sm mb-10">A full suite of products to support every financial goal.</p>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
             {savingsProducts.map(({ icon: Icon, name, desc, href }) => (
@@ -129,7 +129,7 @@ export default function BankHub() {
 
       {/* CTA band */}
       <section className="bg-bank-dark py-16 px-4 text-center">
-        <h2 className="text-3xl font-bold text-white mb-4">Ready to make the switch?</h2>
+        <h2 className="text-xl sm:text-3xl font-bold text-white mb-4">Ready to make the switch?</h2>
         <p className="text-white/60 text-sm mb-8 max-w-md mx-auto">Open an account in minutes — no minimum deposit, no paperwork hassle.</p>
         <Link to="/open-account" className="bg-[#4ade80] hover:bg-green-400 text-bank-dark font-bold px-10 py-3 rounded-full transition-colors text-sm inline-block">
           Get Started

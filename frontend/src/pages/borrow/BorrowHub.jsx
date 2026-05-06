@@ -61,7 +61,7 @@ export default function BorrowHub() {
       {/* Hero */}
       <section className="bg-bank-dark py-20 px-4 text-center">
         <p className="text-[#4ade80] text-xs font-bold uppercase tracking-widest mb-3">Borrow with Hunch</p>
-        <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
+        <h1 className="text-2xl sm:text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
           Borrow smarter,<br />
           <span className="text-[#4ade80]">live better.</span>
         </h1>
@@ -81,7 +81,7 @@ export default function BorrowHub() {
       {/* Loan products */}
       <section className="bg-white py-20 px-4">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-bank-dark mb-3 text-center">Pick your path</h2>
+          <h2 className="text-xl sm:text-3xl font-bold text-bank-dark mb-3 text-center">Pick your path</h2>
           <p className="text-gray-500 text-sm text-center mb-12 max-w-lg mx-auto">Every loan is built around your situation — not a one-size-fits-all formula.</p>
           <div className="grid md:grid-cols-2 gap-6">
             {loanProducts.map(({ icon: Icon, name, tagline, desc, features, href, cta }) => (
@@ -110,7 +110,7 @@ export default function BorrowHub() {
       {/* How it works */}
       <section className="bg-bank-surface py-20 px-4" id="calculator">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-bank-dark text-center mb-12">How borrowing with Hunch works</h2>
+          <h2 className="text-xl sm:text-3xl font-bold text-bank-dark text-center mb-12">How borrowing with Hunch works</h2>
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
             {steps.map(({ step, title, desc }) => (
               <div key={step} className="text-center">

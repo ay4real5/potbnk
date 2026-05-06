@@ -62,7 +62,7 @@ export default function GrowHub() {
       {/* Hero */}
       <section className="bg-bank-dark py-20 px-4 text-center">
         <p className="text-[#4ade80] text-xs font-bold uppercase tracking-widest mb-3">Grow with Hunch</p>
-        <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
+        <h1 className="text-2xl sm:text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
           Your money,<br />
           <span className="text-[#4ade80]">working harder.</span>
         </h1>
@@ -84,7 +84,7 @@ export default function GrowHub() {
         <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {stats.map((s) => (
             <div key={s.label}>
-              <p className="text-3xl font-black text-[#4ade80] mb-1">{s.value}</p>
+              <p className="text-2xl sm:text-3xl font-black text-[#4ade80] mb-1">{s.value}</p>
               <p className="text-white/50 text-xs uppercase tracking-wider">{s.label}</p>
             </div>
           ))}
@@ -94,7 +94,7 @@ export default function GrowHub() {
       {/* Growth products */}
       <section className="bg-white py-20 px-4">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-bank-dark text-center mb-3">Build wealth your way</h2>
+          <h2 className="text-xl sm:text-3xl font-bold text-bank-dark text-center mb-3">Build wealth your way</h2>
           <p className="text-center text-gray-500 text-sm mb-12 max-w-lg mx-auto">
             Whether you're saving for a rainy day or building a retirement portfolio, we have the right account for every stage.
           </p>
@@ -130,7 +130,7 @@ export default function GrowHub() {
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div>
             <p className="text-bank-accent text-xs font-semibold uppercase tracking-widest mb-3">The Hunch Path to Wealth</p>
-            <h2 className="text-3xl font-bold text-bank-dark mb-6 leading-snug">
+            <h2 className="text-xl sm:text-3xl font-bold text-bank-dark mb-6 leading-snug">
               Five milestones to a stronger financial future
             </h2>
             <p className="text-gray-500 text-sm leading-relaxed mb-8">
@@ -160,7 +160,7 @@ export default function GrowHub() {
 
       {/* CTA band */}
       <section className="bg-bank-dark py-16 px-4 text-center">
-        <h2 className="text-3xl font-bold text-white mb-4">Ready to put your money to work?</h2>
+        <h2 className="text-xl sm:text-3xl font-bold text-white mb-4">Ready to put your money to work?</h2>
         <p className="text-white/60 text-sm mb-8 max-w-md mx-auto">
           Open a high-yield savings account or speak with an advisor — no obligation, no pressure.
         </p>

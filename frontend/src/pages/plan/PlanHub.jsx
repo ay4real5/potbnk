@@ -62,7 +62,7 @@ export default function PlanHub() {
       {/* Hero */}
       <section className="bg-bank-dark py-20 px-4 text-center">
         <p className="text-[#4ade80] text-xs font-bold uppercase tracking-widest mb-3">Plan with Hunch</p>
-        <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
+        <h1 className="text-2xl sm:text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-5">
           A plan that<br />
           <span className="text-[#4ade80]">moves with you.</span>
         </h1>
@@ -82,7 +82,7 @@ export default function PlanHub() {
       {/* Planning services */}
       <section className="bg-bank-surface py-20 px-4">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-bank-dark text-center mb-3">Planning services built for your life</h2>
+          <h2 className="text-xl sm:text-3xl font-bold text-bank-dark text-center mb-3">Planning services built for your life</h2>
           <p className="text-center text-gray-500 text-sm mb-12 max-w-lg mx-auto">
             Every service is delivered by real experts who take the time to understand your full picture.
           </p>
@@ -117,7 +117,7 @@ export default function PlanHub() {
       <section className="bg-white py-20 px-4">
         <div className="max-w-5xl mx-auto">
           <p className="text-bank-accent text-xs font-semibold uppercase tracking-widest text-center mb-3">Planning by Life Stage</p>
-          <h2 className="text-3xl font-bold text-bank-dark text-center mb-12">Where are you in your journey?</h2>
+          <h2 className="text-xl sm:text-3xl font-bold text-bank-dark text-center mb-12">Where are you in your journey?</h2>
           <div className="flex flex-col gap-4">
             {stages.map((s, i) => (
               <div key={s.title} className="flex gap-6 items-start p-6 border border-gray-100 rounded-2xl hover:border-bank-accent hover:shadow-sm transition-all cursor-pointer group">
@@ -136,7 +136,7 @@ export default function PlanHub() {
       {/* Calculators */}
       <section id="calculators" className="bg-bank-surface py-20 px-4">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-bank-dark text-center mb-3">Tools to sharpen your plan</h2>
+          <h2 className="text-xl sm:text-3xl font-bold text-bank-dark text-center mb-3">Tools to sharpen your plan</h2>
           <p className="text-center text-gray-500 text-sm mb-12">Free calculators to help you think clearly about your financial future.</p>
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-5">
             {calculators.map(({ name, desc, icon: Icon }) => (
@@ -152,7 +152,7 @@ export default function PlanHub() {
 
       {/* CTA */}
       <section className="bg-bank-dark py-16 px-4 text-center">
-        <h2 className="text-3xl font-bold text-white mb-4">Your plan starts with one conversation.</h2>
+        <h2 className="text-xl sm:text-3xl font-bold text-white mb-4">Your plan starts with one conversation.</h2>
         <p className="text-white/60 text-sm mb-8 max-w-md mx-auto">
           A certified financial planner is ready to help — no commitment required, no jargon, just clarity.
         </p>

@@ -236,7 +236,7 @@ export default function Landing() {
       {/* ── Crafted products rail ── */}
       <section id="products" className="bg-[#014745] py-14 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <h2 className="text-left sm:text-center text-[clamp(2.15rem,10.5vw,2.85rem)] sm:text-5xl font-medium text-white mb-3 font-serif leading-[1.03]">
+          <h2 className="text-left sm:text-center text-2xl sm:text-4xl lg:text-5xl font-medium text-white mb-3 font-serif leading-[1.1]">
             Care is crafted into everything we do
           </h2>
           <p className="text-left sm:text-center text-white/75 mb-8 sm:mb-10 max-w-2xl sm:mx-auto text-base sm:text-lg">
@@ -250,7 +250,7 @@ export default function Landing() {
                 className="group bg-[#055f64] hover:bg-[#0a6b71] rounded-2xl px-4 py-4 sm:p-5 transition-all border border-white/10 hover:border-white/30 flex items-start justify-between gap-3 min-h-[92px] sm:min-h-[120px]"
               >
                 <div>
-                  <p className="text-white text-[clamp(1.8rem,8.5vw,2.2rem)] sm:text-2xl font-serif leading-[1.04] sm:leading-tight break-words">
+                  <p className="text-white text-lg sm:text-2xl font-serif leading-tight break-words">
                     {item.name}
                   </p>
                 </div>
@@ -271,7 +271,7 @@ export default function Landing() {
           />
           <div>
             <p className="text-bank-accent text-xs font-semibold uppercase tracking-widest mb-3">Why Hunch</p>
-            <h2 className="text-3xl font-bold text-bank-dark mb-5 leading-snug">
+            <h2 className="text-xl sm:text-3xl font-bold text-bank-dark mb-5 leading-snug">
               Shared value, thoughtfully built
             </h2>
             <p className="text-gray-600 leading-relaxed mb-8">
@@ -300,7 +300,7 @@ export default function Landing() {
       {/* ── Articles ── */}
       <section className="bg-white py-20">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-bank-dark text-center mb-3">
+          <h2 className="text-xl sm:text-3xl font-bold text-bank-dark text-center mb-3">
             Advice and guidance that helps you grow
           </h2>
           <p className="text-center text-gray-500 mb-12">
@@ -364,7 +364,7 @@ export default function Landing() {
       {/* ── Contact / help ── */}
       <section className="bg-bank-dark py-20">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-white text-center mb-3">
+          <h2 className="text-xl sm:text-3xl font-bold text-white text-center mb-3">
             We&apos;re here when you need us
           </h2>
           <p className="text-center text-white/60 mb-12">

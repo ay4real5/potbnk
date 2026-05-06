@@ -390,7 +390,7 @@ export default function ArticleDetail() {
           <span className="text-[10px] font-bold uppercase tracking-wider text-bank-dark bg-[#4ade80] px-2.5 py-1 rounded-sm">
             {article.tag}
           </span>
-          <h1 className="text-2xl md:text-4xl font-black text-white mt-3 leading-snug">{article.title}</h1>
+          <h1 className="text-xl sm:text-2xl md:text-4xl font-black text-white mt-3 leading-snug">{article.title}</h1>
         </div>
       </div>
 
