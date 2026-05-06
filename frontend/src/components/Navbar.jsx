@@ -849,10 +849,10 @@ export default function Navbar({ overlay = false }) {
                       <button
                         key={cat}
                         onClick={() => setMobileCategory(cat)}
-                        className="w-full py-2 text-left text-[clamp(2.5rem,12vw,3.15rem)] leading-[0.95] font-serif text-white flex items-center justify-between gap-3"
+                        className="w-full py-3 text-left text-2xl font-serif text-white flex items-center justify-between gap-3"
                       >
                         <span>{cat}</span>
-                        <ChevronRight size={28} className="text-white/90 shrink-0" />
+                        <ChevronRight size={18} className="text-white/90 shrink-0" />
                       </button>
                     ))}
                   </div>
@@ -863,7 +863,7 @@ export default function Navbar({ overlay = false }) {
                         key={item.title}
                         to={item.href}
                         onClick={closeMobileMenu}
-                        className="text-white text-[18px] font-medium"
+                        className="text-white/80 text-sm font-medium"
                       >
                         {item.title}
                       </Link>
@@ -873,7 +873,7 @@ export default function Navbar({ overlay = false }) {
                   <Link
                     to="/open-account"
                     onClick={closeMobileMenu}
-                    className="pt-4 text-white text-[clamp(2.2rem,11vw,2.8rem)] leading-[0.95] font-bold underline underline-offset-4"
+                    className="pt-2 text-white text-base font-semibold underline underline-offset-4"
                   >
                     Open an account
                   </Link>
@@ -924,11 +924,11 @@ export default function Navbar({ overlay = false }) {
                           className="bg-[#055f64] rounded-2xl px-5 py-5 border border-white/10"
                         >
                           <p className="text-[#8fdb46] text-[16px] tracking-wide mb-2">{card.tag}</p>
-                          <h3 className="text-white font-serif text-[clamp(2.2rem,10vw,3.1rem)] leading-[0.95] mb-4 break-words">{card.title}</h3>
+                          <h3 className="text-white font-serif text-xl leading-snug mb-3 break-words">{card.title}</h3>
                           <Link
                             to={card.href}
                             onClick={closeMobileMenu}
-                            className="inline-flex items-center justify-center rounded-full border-2 border-white/75 text-white text-[clamp(1.45rem,6vw,1.7rem)] font-bold px-6 py-2.5"
+                            className="inline-flex items-center justify-center rounded-full border-2 border-white/75 text-white text-sm font-bold px-5 py-2"
                           >
                             Continue
                           </Link>
@@ -937,7 +937,7 @@ export default function Navbar({ overlay = false }) {
                     </div>
                   ) : (
                     <div className="space-y-3 pt-2">
-                      <h3 className="text-white font-serif text-[clamp(2.3rem,10.5vw,3.3rem)] leading-[0.96] pr-2">
+                      <h3 className="text-white font-serif text-lg leading-snug pr-2">
                         Care is crafted into everything we do
                       </h3>
                       {(PERSONAL_MOBILE_OFFER_LINKS[mobileCategory] || BUSINESS_OFFER_LINKS).map((item) => (
@@ -945,10 +945,10 @@ export default function Navbar({ overlay = false }) {
                           key={item.title}
                           to={item.href}
                           onClick={closeMobileMenu}
-                          className="group bg-[#055f64] rounded-2xl px-5 py-4 border border-white/10 flex items-center justify-between gap-3"
+                          className="group bg-[#055f64] rounded-xl px-4 py-3 border border-white/10 flex items-center justify-between gap-3"
                         >
-                          <span className="text-white text-[clamp(1.8rem,8.4vw,2.25rem)] leading-[1.03] font-serif break-words">{item.title}</span>
-                          <ChevronRight size={26} className="text-white/90 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                          <span className="text-white text-[15px] font-medium break-words">{item.title}</span>
+                          <ChevronRight size={16} className="text-white/90 shrink-0 group-hover:translate-x-0.5 transition-transform" />
                         </Link>
                       ))}
                     </div>
