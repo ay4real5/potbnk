@@ -134,6 +134,30 @@ def database_health():
         }
 
 
+@app.get("/health/config", tags=["System"])
+def config_health():
+    database_url = cfg.database_url
+    database = {"configured": bool(database_url)}
+    if database_url:
+        from sqlalchemy.engine import make_url
+
+        url = make_url(database_url)
+        database.update(
+            {
+                "drivername": url.drivername,
+                "host": url.host,
+                "port": url.port,
+                "database": url.database,
+                "sslmode": url.query.get("sslmode"),
+            }
+        )
+    return {
+        **_runtime_info(),
+        "database": database,
+        "secret_key_custom": cfg.secret_key != "change-me-in-production",
+    }
+
+
 @app.get("/version", tags=["System"])
 def version():
     return {
