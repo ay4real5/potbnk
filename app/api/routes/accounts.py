@@ -3,13 +3,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from app.core.database import get_db
-from app.core.ledger import perform_transfer, perform_deposit, perform_withdrawal
+from app.core.ledger import perform_transfer, perform_external_transfer, perform_deposit, perform_withdrawal
 from app.api.routes.auth import get_current_user
 from app.models.models import User, Account, Transaction
 from app.schemas.accounts import (
     AccountResponse,
     TransactionResponse,
     TransferRequest,
+    ExternalTransferRequest,
     DepositRequest,
     WithdrawRequest,
     OpenAccountRequest,
@@ -252,6 +253,52 @@ def transfer(
             "status": "success",
             "message": f"${payload.amount:,.2f} transferred successfully.",
             "transaction_id": str(tx.id),
+            "remaining_balance": float(sender.balance)
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/external-transfer")
+def external_transfer(
+    payload: ExternalTransferRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    sender = db.query(Account).filter(
+        Account.id == payload.sender_account_id,
+        Account.user_id == current_user.id
+    ).first()
+
+    if not sender:
+        raise HTTPException(status_code=403, detail="You do not own this account.")
+
+    DAILY_LIMIT = Decimal("10000.00")
+    if payload.amount > DAILY_LIMIT:
+        raise HTTPException(
+            status_code=400,
+            detail=f"External transfer exceeds daily limit of ${DAILY_LIMIT:,.2f}."
+        )
+
+    if len(payload.recipient_account_number.strip()) < 4:
+        raise HTTPException(status_code=400, detail="Recipient account number must be at least 4 digits.")
+
+    try:
+        tx = perform_external_transfer(
+            db,
+            payload.sender_account_id,
+            payload.amount,
+            payload.recipient_name.strip(),
+            payload.recipient_bank.strip(),
+            payload.recipient_account_number.strip(),
+            payload.routing_number.strip() if payload.routing_number else None,
+            payload.description
+        )
+        db.refresh(sender)
+        return {
+            "status": "success",
+            "message": f"${payload.amount:,.2f} scheduled to {payload.recipient_bank}.",
+            "transaction_id": str(tx.id),
+            "estimated_arrival": "1-3 business days",
             "remaining_balance": float(sender.balance)
         }
     except ValueError as e:

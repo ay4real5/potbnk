@@ -30,6 +30,15 @@ class TransferRequest(BaseModel):
     amount: Decimal
     description: Optional[str] = "Transfer"
 
+class ExternalTransferRequest(BaseModel):
+    sender_account_id: uuid.UUID
+    recipient_name: str
+    recipient_bank: str
+    recipient_account_number: str
+    routing_number: Optional[str] = None
+    amount: Decimal
+    description: Optional[str] = "External transfer"
+
 class DepositRequest(BaseModel):
     account_id: uuid.UUID
     amount: Decimal

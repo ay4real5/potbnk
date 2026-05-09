@@ -1,37 +1,45 @@
-import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import api from '../api/client';
 import BankShell from '../components/BankShell';
-import { Search, UserCheck, ShieldCheck, ArrowDown, Clock } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Building2, CheckCircle, Clock, Landmark, Search, ShieldCheck, UserCheck, Zap } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+
+const QUICK_AMOUNTS = [25, 50, 100, 250, 500, 1000];
+const DAILY_LIMIT = 10000;
+
+const TRANSFER_TYPES = {
+  internal: { label: 'Hunch account', speed: 'Instant', fee: 0, icon: Zap, limit: 10000 },
+  external: { label: 'Other bank', speed: '1-3 business days', fee: 0, icon: Landmark, limit: 10000 },
+};
+
+const formatMoney = (value) => Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function Transfer() {
   const [accounts, setAccounts] = useState([]);
-  const [form, setForm] = useState({
-    sender_account_id: '',
-    receiver_account_id: '',
-    amount: '',
-    description: 'Transfer',
-  });
+  const [form, setForm] = useState({ sender_account_id: '', receiver_account_id: '', amount: '', description: 'Transfer' });
+  const [transferType, setTransferType] = useState('internal');
+  const [externalForm, setExternalForm] = useState({ recipient_name: '', recipient_bank: '', recipient_account_number: '', routing_number: '' });
   const [recipientInput, setRecipientInput] = useState('');
   const [resolvedRecipient, setResolvedRecipient] = useState(null);
   const [lookupError, setLookupError] = useState('');
   const [looking, setLooking] = useState(false);
   const [recentTx, setRecentTx] = useState([]);
-  const debounceRef = useRef(null);
+  const [reviewing, setReviewing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [success, setSuccess] = useState(null);
+  const debounceRef = useRef(null);
   const toast = useToast();
 
   useEffect(() => {
     api.get('/accounts/').then(({ data }) => {
       setAccounts(data);
       if (data.length > 0) setForm((f) => ({ ...f, sender_account_id: data[0].id }));
-    });
-    api.get('/accounts/transactions?limit=3').then(({ data }) => setRecentTx(data)).catch(() => {});
+    }).catch(() => toast.error('Unable to load your accounts.'));
+    api.get('/accounts/transactions?limit=4').then(({ data }) => setRecentTx(data)).catch(() => {});
   }, []);
 
   useEffect(() => {
+    if (transferType !== 'internal') return;
     const trimmed = recipientInput.trim().toUpperCase();
     setResolvedRecipient(null);
     setLookupError('');
@@ -54,19 +62,50 @@ export default function Transfer() {
       }
     }, 500);
     return () => clearTimeout(debounceRef.current);
-  }, [recipientInput, accounts]);
+  }, [recipientInput, accounts, transferType]);
 
-  const handleSubmit = async (e) => {
+  const selectedSender = accounts.find((a) => a.id === form.sender_account_id);
+  const selectedType = TRANSFER_TYPES[transferType];
+  const amount = Number(form.amount || 0);
+  const fee = selectedType.fee || 0;
+  const totalDebit = amount + fee;
+  const availableBalance = Number(selectedSender?.balance || 0);
+  const exceedsLimit = amount > Math.min(DAILY_LIMIT, selectedType.limit);
+  const exceedsBalance = totalDebit > availableBalance;
+  const recipientReady = transferType === 'external'
+    ? externalForm.recipient_name && externalForm.recipient_bank && externalForm.recipient_account_number.length >= 4
+    : resolvedRecipient;
+  const canReview = form.sender_account_id && amount > 0 && recipientReady && !exceedsLimit && !exceedsBalance;
+  const recipientLabel = transferType === 'external' ? externalForm.recipient_name : resolvedRecipient?.holder_name;
+  const recipientDetail = transferType === 'external'
+    ? `${externalForm.recipient_bank || 'External bank'} ${externalForm.recipient_account_number ? '••••' + externalForm.recipient_account_number.slice(-4) : ''}`
+    : resolvedRecipient ? `${resolvedRecipient.account_type} ••••${resolvedRecipient.account_number.slice(-4)}` : 'Enter recipient account';
+
+  const handleReview = (e) => {
     e.preventDefault();
-    if (!resolvedRecipient) { toast.error('Please enter a valid recipient account number.'); return; }
+    if (!canReview) {
+      toast.error(exceedsBalance ? 'Amount exceeds available balance.' : exceedsLimit ? 'This transfer exceeds the selected method limit.' : 'Complete transfer details before reviewing.');
+      return;
+    }
+    setReviewing(true);
+  };
+
+  const submitTransfer = async () => {
     setLoading(true);
     try {
-      const { data } = await api.post('/accounts/transfer', { ...form, amount: parseFloat(form.amount) });
-      toast.success(data.message || 'Transfer completed.');
+      const payload = { ...form, amount };
+      const { data } = transferType === 'external'
+        ? await api.post('/accounts/external-transfer', { ...payload, ...externalForm })
+        : await api.post('/accounts/transfer', payload);
+      const { data: accs } = await api.get('/accounts/');
+      setAccounts(accs);
+      api.get('/accounts/transactions?limit=4').then(({ data: d }) => setRecentTx(d)).catch(() => {});
+      setSuccess({ amount, reference: data.transaction_id, speed: data.estimated_arrival || selectedType.speed });
       setResolvedRecipient(null);
       setRecipientInput('');
+      setExternalForm({ recipient_name: '', recipient_bank: '', recipient_account_number: '', routing_number: '' });
       setForm((f) => ({ ...f, receiver_account_id: '', amount: '', description: 'Transfer' }));
-      api.get('/accounts/transactions?limit=3').then(({ data: d }) => setRecentTx(d)).catch(() => {});
+      setReviewing(false);
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Transfer failed. Please try again.');
     } finally {
@@ -74,195 +113,139 @@ export default function Transfer() {
     }
   };
 
-  const selectedSender = accounts.find((a) => a.id === form.sender_account_id);
-  const amountFmt = form.amount
-    ? parseFloat(form.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })
-    : '0.00';
-
   return (
     <BankShell title="Send Money">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Send Money</h1>
-          <p className="text-slate-400 text-sm mt-1">Transfer between your accounts instantly</p>
+      {success && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl dark:bg-[#111a18]">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+              <CheckCircle className="text-emerald-600" size={36} />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Transfer submitted</h2>
+            <p className="mt-2 text-4xl font-bold text-[#063b36] dark:text-[#7CFC00]">${formatMoney(success.amount)}</p>
+            <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-left text-sm text-slate-600 dark:bg-white/5 dark:text-white/60">
+              <div className="flex justify-between"><span>Delivery</span><span className="font-semibold text-slate-900 dark:text-white">{success.speed}</span></div>
+              <div className="mt-2 flex justify-between"><span>Reference</span><span className="font-mono text-xs text-slate-900 dark:text-white">{String(success.reference).slice(0, 8).toUpperCase()}</span></div>
+            </div>
+            <button onClick={() => setSuccess(null)} className="mt-6 w-full rounded-xl bg-[#063b36] py-3 font-semibold text-white hover:bg-[#041f1c]">Done</button>
+          </div>
+        </div>
+      )}
+
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#063b36] dark:text-[#7CFC00]">Payments and transfers</p>
+            <h1 className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">Send money</h1>
+            <p className="mt-1 text-slate-500 dark:text-white/50">Transfer to Hunch customers instantly or schedule an external bank transfer.</p>
+          </div>
+          <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-500 shadow-sm dark:bg-white/5 dark:text-white/60">
+            <ShieldCheck size={14} /> Review required before sending
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* LEFT — form */}
-          <div className="lg:col-span-3 bg-white dark:bg-[#111a18] rounded-2xl shadow-sm border border-slate-100 dark:border-white/10 p-8">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <div className="grid gap-6 lg:grid-cols-5">
+          <form onSubmit={handleReview} className="lg:col-span-3 space-y-5">
+            <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#111a18]">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-400">From account</label>
+              <select value={form.sender_account_id} onChange={(e) => setForm((f) => ({ ...f, sender_account_id: e.target.value }))} className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white">
+                {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_type.replace(/_/g, ' ')} ••••{a.account_number.slice(-4)} — ${formatMoney(a.balance)}</option>)}
+              </select>
+              {selectedSender && <p className="mt-2 text-sm text-slate-500">Available balance: <span className="font-semibold text-slate-900 dark:text-white">${formatMoney(selectedSender.balance)}</span></p>}
+            </section>
 
-              {/* From */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">FROM ACCOUNT</label>
-                <select
-                  value={form.sender_account_id}
-                  onChange={(e) => setForm((f) => ({ ...f, sender_account_id: e.target.value }))}
-                  className="w-full border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm bg-white dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#063b36] appearance-none"
-                >
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.account_type.replace(/_/g, ' ')} &middot; &bull;&bull;&bull;&bull;{a.account_number.slice(-4)} &mdash; ${parseFloat(a.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </option>
-                  ))}
-                </select>
-                {selectedSender && (
-                  <p className="text-xs text-slate-400 mt-1.5">
-                    Available: <span className="font-semibold text-slate-700 dark:text-white/70">${parseFloat(selectedSender.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                  </p>
-                )}
+            <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#111a18]">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Transfer type</label>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {Object.entries(TRANSFER_TYPES).map(([id, option]) => {
+                  const Icon = option.icon;
+                  return <button key={id} type="button" onClick={() => { setTransferType(id); setResolvedRecipient(null); setRecipientInput(''); setForm((f) => ({ ...f, receiver_account_id: '' })); }} className={`rounded-2xl border p-4 text-left transition ${transferType === id ? 'border-[#063b36] bg-[#063b36]/5 ring-2 ring-[#063b36]/10 dark:bg-[#063b36]/20' : 'border-slate-200 hover:border-slate-300 dark:border-white/10'}`}>
+                    <Icon className={transferType === id ? 'text-[#063b36] dark:text-[#7CFC00]' : 'text-slate-400'} size={22} />
+                    <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">{option.label}</p>
+                    <p className="mt-1 text-xs text-slate-500">{option.speed}</p>
+                  </button>;
+                })}
               </div>
+            </section>
 
-              {/* Arrow divider */}
-              <div className="flex items-center justify-center -my-2">
-                <div className="w-9 h-9 rounded-full bg-[#063b36] text-white flex items-center justify-center shadow-md">
-                  <ArrowDown size={16} />
-                </div>
-              </div>
-
-              {/* To — account number lookup */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">TO ACCOUNT</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={recipientInput}
-                    onChange={(e) => setRecipientInput(e.target.value)}
-                    className="w-full border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm bg-white dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#063b36] pr-10"
-                    placeholder="Enter account number (e.g. PRO-1234567890)"
-                    autoComplete="off"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
-                    {looking
-                      ? <span className="w-4 h-4 border-2 border-[#063b36] border-t-transparent rounded-full animate-spin block" />
-                      : <Search size={15} />}
-                  </span>
-                </div>
-                {resolvedRecipient && (
-                  <div className="mt-2 flex items-center gap-2.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-xl px-4 py-2.5">
-                    <UserCheck size={15} className="text-emerald-600 shrink-0" />
-                    <p className="text-sm">
-                      <span className="font-semibold text-emerald-700 dark:text-emerald-400">{resolvedRecipient.holder_name}</span>
-                      <span className="text-emerald-600 dark:text-emerald-500"> &middot; {resolvedRecipient.account_type} &middot; &bull;&bull;&bull;&bull;{resolvedRecipient.account_number.slice(-4)}</span>
-                    </p>
+            <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#111a18]">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Recipient</label>
+              {transferType === 'internal' ? (
+                <div className="mt-4">
+                  <div className="relative">
+                    <input value={recipientInput} onChange={(e) => setRecipientInput(e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 pr-11 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Enter Hunch account number" autoComplete="off" />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">{looking ? <span className="block h-4 w-4 animate-spin rounded-full border-2 border-[#063b36] border-t-transparent" /> : <Search size={16} />}</span>
                   </div>
-                )}
-                {lookupError && <p className="mt-1.5 text-xs text-red-600">{lookupError}</p>}
-              </div>
+                  {resolvedRecipient && <div className="mt-3 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"><UserCheck size={16} /> <span><b>{resolvedRecipient.holder_name}</b> · {resolvedRecipient.account_type} · ••••{resolvedRecipient.account_number.slice(-4)}</span></div>}
+                  {lookupError && <p className="mt-2 text-sm text-red-600">{lookupError}</p>}
+                </div>
+              ) : (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <input required value={externalForm.recipient_name} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_name: e.target.value }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Recipient full name" />
+                  <input required value={externalForm.recipient_bank} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_bank: e.target.value }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Bank name" />
+                  <input required value={externalForm.recipient_account_number} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_account_number: e.target.value.replace(/\D/g, '') }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Account number" />
+                  <input value={externalForm.routing_number} onChange={(e) => setExternalForm((f) => ({ ...f, routing_number: e.target.value.replace(/\D/g, '') }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Routing number" />
+                </div>
+              )}
+            </section>
 
-              {/* Amount — big centered */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 text-center">AMOUNT</label>
-                <div className="relative bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 px-8 py-6 flex items-center justify-center">
-                  <span className="text-4xl text-slate-300 dark:text-white/20 font-light mr-1 select-none">$</span>
-                  <input
-                    type="number"
-                    required
-                    min="0.01"
-                    step="0.01"
-                    value={form.amount}
-                    onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-                    className="text-4xl font-bold bg-transparent dark:text-white focus:outline-none tabular-nums text-center w-full"
-                    placeholder="0.00"
-                  />
-                </div>
-                {selectedSender && (
-                  <p className="text-xs text-slate-400 text-center mt-1.5">
-                    Available: ${parseFloat(selectedSender.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </p>
-                )}
+            <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#111a18]">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Amount</label>
+              <div className="mt-5 flex items-center justify-center rounded-3xl border border-slate-100 bg-slate-50 px-5 py-8 dark:border-white/10 dark:bg-white/5">
+                <span className="mr-2 text-5xl font-light text-slate-300">$</span>
+                <input type="number" required min="0.01" step="0.01" value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} className="w-full bg-transparent text-center text-5xl font-bold text-slate-900 outline-none dark:text-white" placeholder="0.00" />
               </div>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {QUICK_AMOUNTS.map((quick) => <button key={quick} type="button" onClick={() => setForm((f) => ({ ...f, amount: String(quick) }))} className={`rounded-full px-4 py-2 text-sm font-semibold ${amount === quick ? 'bg-[#063b36] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/10 dark:text-white/60'}`}>${quick.toLocaleString()}</button>)}
+              </div>
+              {(exceedsLimit || exceedsBalance) && <p className="mt-3 flex items-center gap-2 text-sm text-red-600"><AlertTriangle size={15} /> {exceedsBalance ? 'Amount exceeds available balance.' : `Limit for ${selectedType.label} is $${formatMoney(selectedType.limit)}.`}</p>}
+            </section>
 
-              {/* Note */}
-              <div>
-                <input
-                  type="text"
-                  value={form.description}
-                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  className="w-full border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm bg-white dark:bg-white/5 dark:text-white/60 focus:outline-none focus:ring-2 focus:ring-[#063b36]"
-                  placeholder="Add a note (optional)"
-                />
-              </div>
+            <input type="text" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Memo (optional)" />
+            <button type="submit" disabled={!canReview} className="w-full rounded-2xl bg-[#063b36] py-4 text-base font-bold text-white transition hover:bg-[#041f1c] disabled:cursor-not-allowed disabled:opacity-50">Review transfer <ArrowRight className="ml-2 inline" size={16} /></button>
+          </form>
 
-              <button
-                type="submit"
-                disabled={loading || !resolvedRecipient}
-                className="w-full bg-[#063b36] text-white rounded-xl py-4 text-lg font-semibold hover:bg-[#041f1c] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading
-                  ? <span className="flex items-center justify-center gap-2"><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Sending&hellip;</span>
-                  : 'Transfer Now →'}
-              </button>
-              <p className="text-center text-xs text-slate-400">Transfers are instant and cannot be reversed</p>
-            </form>
-          </div>
-
-          {/* RIGHT — dark preview */}
-          <div className="lg:col-span-2 flex flex-col gap-4">
-            <div className="bg-[#063b36] rounded-2xl p-7 text-white">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-5">Transfer Summary</p>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-white/40">From</span>
-                  <span className="text-sm font-semibold text-white/80 text-right max-w-[160px] truncate">
-                    {selectedSender ? selectedSender.account_type.replace(/_/g, ' ') + ' ••••' + selectedSender.account_number.slice(-4) : '—'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-white/40">To</span>
-                  <span className="text-sm font-semibold text-white/80 text-right max-w-[160px] truncate">
-                    {resolvedRecipient ? resolvedRecipient.holder_name : '—'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-white/40">Amount</span>
-                  <span className="text-2xl font-bold text-[#7CFC00] tabular-nums">${amountFmt}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-white/40">Date</span>
-                  <span className="text-sm font-semibold text-white/80">
-                    {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-white/40">Status</span>
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-emerald-400">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    {resolvedRecipient ? 'Ready to send' : 'Waiting…'}
-                  </span>
-                </div>
+          <aside className="lg:col-span-2 space-y-5">
+            <section className="rounded-3xl bg-[#063b36] p-6 text-white shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-widest text-white/40">Transfer summary</p>
+              <div className="mt-6 space-y-4 text-sm">
+                <div className="flex justify-between gap-4"><span className="text-white/50">Amount</span><span className="text-2xl font-bold text-[#7CFC00]">${formatMoney(amount)}</span></div>
+                <div className="flex justify-between gap-4"><span className="text-white/50">From</span><span className="font-semibold text-right">{selectedSender ? `${selectedSender.account_type.replace(/_/g, ' ')} ••••${selectedSender.account_number.slice(-4)}` : '—'}</span></div>
+                <div className="flex justify-between gap-4"><span className="text-white/50">To</span><span className="font-semibold text-right">{recipientLabel || '—'}</span></div>
+                <div className="flex justify-between gap-4"><span className="text-white/50">Method</span><span className="font-semibold text-right">{selectedType.label}</span></div>
+                <div className="flex justify-between gap-4"><span className="text-white/50">Delivery</span><span className="font-semibold text-right">{selectedType.speed}</span></div>
               </div>
-              <div className="border-t border-white/10 my-5" />
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={14} className="text-[#7CFC00] shrink-0" />
-                <p className="text-xs text-white/40">256-bit encrypted transfer</p>
+            </section>
+            <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#111a18]">
+              <div className="flex items-start gap-3">
+                <Building2 className="mt-0.5 text-slate-400" size={18} />
+                <p className="text-sm text-slate-500 dark:text-white/50">External transfers are simulated and recorded as scheduled. A production bank would use ACH, RTP, FedNow, wire, or card network rails.</p>
               </div>
-            </div>
-
-            {recentTx.length > 0 && (
-              <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock size={13} className="text-slate-400" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recent Activity</p>
-                </div>
-                <ul className="space-y-3">
-                  {recentTx.map((tx) => (
-                    <li key={tx.id} className="flex justify-between items-center text-xs">
-                      <div>
-                        <p className="font-semibold text-slate-700 dark:text-white/70 truncate max-w-[140px]">{tx.description || tx.type}</p>
-                        <p className="text-slate-400 text-[10px] mt-0.5">{new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                      </div>
-                      <span className={tx.type === 'DEPOSIT' ? 'font-bold text-emerald-600' : 'font-bold text-red-500'}>
-                        {tx.type === 'DEPOSIT' ? '+' : '-'}${parseFloat(tx.amount).toFixed(2)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
+            </section>
+            {recentTx.length > 0 && <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#111a18]"><div className="mb-3 flex items-center gap-2"><Clock size={14} className="text-slate-400" /><p className="text-xs font-bold uppercase tracking-widest text-slate-400">Recent activity</p></div><ul className="space-y-3">{recentTx.map((tx) => <li key={tx.id} className="flex items-center justify-between gap-3 text-xs"><div><p className="max-w-[160px] truncate font-semibold text-slate-700 dark:text-white/70">{tx.description || tx.type}</p><p className="mt-0.5 text-[10px] text-slate-400">{new Date(tx.created_at).toLocaleDateString()}</p></div><span className={tx.type === 'DEPOSIT' ? 'font-bold text-emerald-600' : 'font-bold text-red-500'}>{tx.type === 'DEPOSIT' ? '+' : '-'}${formatMoney(tx.amount)}</span></li>)}</ul></section>}
+          </aside>
         </div>
       </div>
+
+      {reviewing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl dark:bg-[#111a18]">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Review transfer</h2>
+            <p className="mt-1 text-sm text-slate-500">Confirm recipient and amount before submitting.</p>
+            <div className="mt-5 space-y-3 rounded-2xl bg-slate-50 p-4 text-sm dark:bg-white/5">
+              <div className="flex justify-between"><span>From</span><span className="font-semibold">{selectedSender?.account_type?.replace(/_/g, ' ')} ••••{selectedSender?.account_number?.slice(-4)}</span></div>
+              <div className="flex justify-between"><span>To</span><span className="font-semibold text-right">{recipientLabel}<br /><span className="text-xs font-normal text-slate-400">{recipientDetail}</span></span></div>
+              <div className="flex justify-between"><span>Amount</span><span className="font-semibold">${formatMoney(amount)}</span></div>
+              <div className="flex justify-between"><span>Fee</span><span className="font-semibold">${formatMoney(fee)}</span></div>
+              <div className="flex justify-between"><span>Delivery</span><span className="font-semibold text-right">{selectedType.speed}</span></div>
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button type="button" onClick={() => setReviewing(false)} className="rounded-xl border border-slate-200 py-3 font-semibold text-slate-600 dark:border-white/10 dark:text-white/70">Edit</button>
+              <button type="button" disabled={loading} onClick={submitTransfer} className="rounded-xl bg-[#063b36] py-3 font-semibold text-white hover:bg-[#041f1c] disabled:opacity-50">{loading ? 'Processing...' : 'Confirm transfer'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </BankShell>
   );
 }
