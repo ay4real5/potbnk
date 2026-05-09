@@ -12,6 +12,33 @@ const TRANSFER_TYPES = {
   external: { label: 'Other bank', speed: '1-3 business days', fee: 0, icon: Landmark, limit: 10000 },
 };
 
+const US_BANKS = [
+  'Bank of America',
+  'Chase Bank',
+  'Wells Fargo',
+  'Citibank',
+  'Capital One',
+  'U.S. Bank',
+  'PNC Bank',
+  'Truist Bank',
+  'TD Bank',
+  'BMO Bank',
+  'Citizens Bank',
+  'Fifth Third Bank',
+  'KeyBank',
+  'Huntington Bank',
+  'Regions Bank',
+  'M&T Bank',
+  'Ally Bank',
+  'SoFi Bank',
+  'Discover Bank',
+  'Synchrony Bank',
+  'American Express National Bank',
+  'Navy Federal Credit Union',
+  'State Employees Credit Union',
+  'Other bank',
+];
+
 const formatMoney = (value) => Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function Transfer() {
@@ -19,6 +46,7 @@ export default function Transfer() {
   const [form, setForm] = useState({ sender_account_id: '', receiver_account_id: '', amount: '', description: 'Transfer' });
   const [transferType, setTransferType] = useState('internal');
   const [externalForm, setExternalForm] = useState({ recipient_name: '', recipient_bank: '', recipient_account_number: '', routing_number: '' });
+  const [customBankName, setCustomBankName] = useState('');
   const [recipientInput, setRecipientInput] = useState('');
   const [resolvedRecipient, setResolvedRecipient] = useState(null);
   const [lookupError, setLookupError] = useState('');
@@ -73,7 +101,7 @@ export default function Transfer() {
   const exceedsLimit = amount > Math.min(DAILY_LIMIT, selectedType.limit);
   const exceedsBalance = totalDebit > availableBalance;
   const recipientReady = transferType === 'external'
-    ? externalForm.recipient_name && externalForm.recipient_bank && externalForm.recipient_account_number.length >= 4
+    ? externalForm.recipient_name && externalForm.recipient_bank && (externalForm.recipient_bank !== 'Other bank' || customBankName.trim()) && externalForm.recipient_account_number.length >= 4
     : resolvedRecipient;
   const canReview = form.sender_account_id && amount > 0 && recipientReady && !exceedsLimit && !exceedsBalance;
   const recipientLabel = transferType === 'external' ? externalForm.recipient_name : resolvedRecipient?.holder_name;
@@ -94,8 +122,13 @@ export default function Transfer() {
     setLoading(true);
     try {
       const payload = { ...form, amount };
+      const externalPayload = {
+        ...payload,
+        ...externalForm,
+        recipient_bank: externalForm.recipient_bank === 'Other bank' ? customBankName.trim() : externalForm.recipient_bank,
+      };
       const { data } = transferType === 'external'
-        ? await api.post('/accounts/external-transfer', { ...payload, ...externalForm })
+        ? await api.post('/accounts/external-transfer', externalPayload)
         : await api.post('/accounts/transfer', payload);
       const { data: accs } = await api.get('/accounts/');
       setAccounts(accs);
@@ -104,6 +137,7 @@ export default function Transfer() {
       setResolvedRecipient(null);
       setRecipientInput('');
       setExternalForm({ recipient_name: '', recipient_bank: '', recipient_account_number: '', routing_number: '' });
+      setCustomBankName('');
       setForm((f) => ({ ...f, receiver_account_id: '', amount: '', description: 'Transfer' }));
       setReviewing(false);
     } catch (err) {
@@ -182,7 +216,13 @@ export default function Transfer() {
               ) : (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <input required value={externalForm.recipient_name} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_name: e.target.value }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Recipient full name" />
-                  <input required value={externalForm.recipient_bank} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_bank: e.target.value }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Bank name" />
+                  <select required value={externalForm.recipient_bank} onChange={(e) => { setExternalForm((f) => ({ ...f, recipient_bank: e.target.value })); if (e.target.value !== 'Other bank') setCustomBankName(''); }} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white">
+                    <option value="">Select recipient bank</option>
+                    {US_BANKS.map((bank) => <option key={bank} value={bank}>{bank}</option>)}
+                  </select>
+                  {externalForm.recipient_bank === 'Other bank' && (
+                    <input required value={customBankName} onChange={(e) => setCustomBankName(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Enter bank name" />
+                  )}
                   <input required value={externalForm.recipient_account_number} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_account_number: e.target.value.replace(/\D/g, '') }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Account number" />
                   <input value={externalForm.routing_number} onChange={(e) => setExternalForm((f) => ({ ...f, routing_number: e.target.value.replace(/\D/g, '') }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Routing number" />
                 </div>
