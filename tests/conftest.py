@@ -27,6 +27,7 @@ from sqlalchemy.orm import sessionmaker
 from app.core.database import Base, get_db
 from app.main import app
 from app.api.routes import auth as auth_module
+from app.core import state as _state_module
 
 _engine = create_engine(os.environ["DATABASE_URL"])
 _SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_engine)
@@ -60,7 +61,8 @@ def _wipe_db():
 def _reset_in_memory_state():
     """Clear module-level rate-limiter and reset-token dicts between tests."""
     auth_module._login_attempts.clear()
-    auth_module._reset_tokens.clear()
+    _state_module.reset_tokens.clear()
+    _state_module.locked_users.clear()
 
 
 @pytest.fixture()

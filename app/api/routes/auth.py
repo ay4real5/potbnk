@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from app.core.database import SessionLocal, get_engine, get_db
 from app.core.config import get_settings
 from app.core.security import verify_password, get_password_hash, create_access_token, decode_token
+from app.core.state import locked_users as _locked_users, reset_tokens as _reset_tokens
 from app.models.models import User, Account
 from app.schemas.auth import UserRegister, TokenResponse, UserProfile, UserUpdate, ForgotPasswordRequest, ResetPasswordRequest
 import uuid
@@ -48,9 +49,6 @@ def _client_ip(request: Request) -> str:
     if request.client and request.client.host:
         return request.client.host
     return "unknown"
-
-# ── In-memory password reset tokens {token: {user_id, expires_at}} ───────────
-_reset_tokens: dict = {}
 
 def generate_account_number():
     return f"PRO-{secrets.randbelow(9000000000) + 1000000000}"
@@ -99,6 +97,14 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Reject locked accounts
+    if str(user.id) in _locked_users:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been locked. Please contact support.",
+        )
+
     return user
 
 
@@ -123,7 +129,8 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
 
     # Auto-create a Checking and Savings account for every new user
     for account_type in ["CHECKING", "SAVINGS"]:
-        for _ in range(10):  # Retry on collision
+        account_created = False
+        for attempt in range(10):  # Retry on collision
             account_number = generate_account_number()
             account = Account(
                 id=uuid.uuid4(),
@@ -135,12 +142,14 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
             db.add(account)
             try:
                 db.flush()
+                account_created = True
                 break
             except IntegrityError:
-                db.rollback()
-                db.add(new_user)
-                db.flush()
-        else:
+                # Account number collision - remove the failed account and retry with a new number
+                db.expunge(account)
+        
+        if not account_created:
+            # Could not create account after 10 attempts
             db.rollback()
             raise HTTPException(status_code=500, detail="Failed to generate unique account number.")
 
@@ -201,6 +210,13 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
             headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    # Reject locked accounts at login
+    if str(user.id) in _locked_users:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been locked. Please contact support.",
         )
 
     token = create_access_token(data={"sub": str(user.id)})

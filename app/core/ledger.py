@@ -7,6 +7,8 @@ import uuid
 def perform_deposit(db: Session, account_id: uuid.UUID, amount: Decimal, description: str = "Deposit"):
     if amount <= 0:
         raise ValueError("Deposit amount must be greater than zero.")
+    if amount > Decimal("1000000.00"):
+        raise ValueError("Single deposit cannot exceed $1,000,000.")
 
     account = db.query(Account).filter(Account.id == account_id).with_for_update().first()
     if not account:
@@ -23,9 +25,13 @@ def perform_deposit(db: Session, account_id: uuid.UUID, amount: Decimal, descrip
         type="DEPOSIT"
     )
     db.add(tx)
-    db.commit()
-    db.refresh(tx)
-    return tx
+    try:
+        db.commit()
+        db.refresh(tx)
+        return tx
+    except SQLAlchemyError:
+        db.rollback()
+        raise ValueError("Deposit failed. Please try again.")
 
 def perform_transfer(
     db: Session,
@@ -73,9 +79,15 @@ def perform_transfer(
         db.rollback()  # If anything fails, reverse everything
         raise ValueError("Transaction failed. Please try again.")
 
+# Daily withdrawal limit
+_DAILY_WITHDRAWAL_LIMIT = Decimal("10000.00")
+
+
 def perform_withdrawal(db: Session, account_id: uuid.UUID, amount: Decimal, description: str = "Withdrawal"):
     if amount <= 0:
         raise ValueError("Withdrawal amount must be greater than zero.")
+    if amount > _DAILY_WITHDRAWAL_LIMIT:
+        raise ValueError(f"Withdrawal exceeds daily limit of ${_DAILY_WITHDRAWAL_LIMIT:,.2f}.")
 
     account = db.query(Account).filter(Account.id == account_id).with_for_update().first()
     if not account:
