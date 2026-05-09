@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     supabase_service_role_key: str | None = None
 
     model_config = SettingsConfigDict(
-        env_file="app/.env",
+        env_file=(".env", "app/.env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
