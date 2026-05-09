@@ -3,7 +3,9 @@ import os
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from app.core.config import get_settings
+from app.core.database import get_engine
 from app.models import models
 from app.api.routes import auth, accounts, supabase, admin
 
@@ -115,6 +117,21 @@ def system_status():
 @app.get("/health", tags=["System"])
 def health():
     return {"status": "healthy"}
+
+
+@app.get("/health/db", tags=["System"])
+def database_health():
+    try:
+        with get_engine().connect() as connection:
+            connection.execute(text("SELECT 1"))
+        return {"status": "healthy", "database": "connected"}
+    except Exception as exc:
+        logger.exception("Database health check failed.")
+        return {
+            "status": "unhealthy",
+            "database": "disconnected",
+            "error": exc.__class__.__name__,
+        }
 
 
 @app.get("/version", tags=["System"])

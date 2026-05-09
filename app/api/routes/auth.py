@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from types import SimpleNamespace
 from app.core.database import SessionLocal, get_engine, get_db
 from app.core.config import get_settings
@@ -110,56 +110,62 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
 @router.post("/register", status_code=201)
 def register(payload: UserRegister, db: Session = Depends(get_db)):
-    normalized_email = _normalize_email(payload.email)
+    try:
+        normalized_email = _normalize_email(payload.email)
 
-    # Check if email already exists
-    existing = db.query(User).filter(User.email == normalized_email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="An account with this email already exists.")
+        # Check if email already exists
+        existing = db.query(User).filter(User.email == normalized_email).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="An account with this email already exists.")
 
-    # Create user
-    new_user = User(
-        id=uuid.uuid4(),
-        full_name=payload.full_name,
-        email=normalized_email,
-        hashed_password=get_password_hash(payload.password)
-    )
-    db.add(new_user)
-    db.flush()  # Get the user ID before committing
+        # Create user
+        new_user = User(
+            id=uuid.uuid4(),
+            full_name=payload.full_name,
+            email=normalized_email,
+            hashed_password=get_password_hash(payload.password)
+        )
+        db.add(new_user)
+        db.flush()  # Get the user ID before committing
 
-    # Auto-create a Checking and Savings account for every new user
-    for account_type in ["CHECKING", "SAVINGS"]:
-        account_created = False
-        for attempt in range(10):  # Retry on collision
-            account_number = generate_account_number()
-            account = Account(
-                id=uuid.uuid4(),
-                user_id=new_user.id,
-                account_number=account_number,
-                account_type=account_type,
-                balance=0.00
-            )
-            db.add(account)
-            try:
-                db.flush()
-                account_created = True
-                break
-            except IntegrityError:
-                # Account number collision - remove the failed account and retry with a new number
-                db.expunge(account)
-        
-        if not account_created:
-            # Could not create account after 10 attempts
-            db.rollback()
-            raise HTTPException(status_code=500, detail="Failed to generate unique account number.")
+        # Auto-create a Checking and Savings account for every new user
+        for account_type in ["CHECKING", "SAVINGS"]:
+            account_created = False
+            for attempt in range(10):  # Retry on collision
+                account_number = generate_account_number()
+                account = Account(
+                    id=uuid.uuid4(),
+                    user_id=new_user.id,
+                    account_number=account_number,
+                    account_type=account_type,
+                    balance=0.00
+                )
+                db.add(account)
+                try:
+                    db.flush()
+                    account_created = True
+                    break
+                except IntegrityError:
+                    # Account number collision - remove the failed account and retry with a new number
+                    db.expunge(account)
+            
+            if not account_created:
+                # Could not create account after 10 attempts
+                db.rollback()
+                raise HTTPException(status_code=500, detail="Failed to generate unique account number.")
 
-    db.commit()
+        db.commit()
 
-    return {
-        "status": "success",
-        "message": f"Welcome to ProBank, {new_user.full_name}! Your accounts are ready.",
-        "user_id": str(new_user.id)
-    }
+        return {
+            "status": "success",
+            "message": f"Welcome to ProBank, {new_user.full_name}! Your accounts are ready.",
+            "user_id": str(new_user.id)
+        }
+    except HTTPException:
+        raise
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(status_code=503, detail=f"Database error during registration: {exc.__class__.__name__}") from exc
 
 
 @router.post("/login", response_model=TokenResponse)

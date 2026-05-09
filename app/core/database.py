@@ -2,7 +2,9 @@ import logging
 from threading import Lock
 from functools import lru_cache
 
+from fastapi import HTTPException
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -43,8 +45,12 @@ def ensure_schema():
 
 
 def get_db():
-    ensure_schema()
-    db = SessionLocal(bind=get_engine())
+    try:
+        ensure_schema()
+        db = SessionLocal(bind=get_engine())
+    except SQLAlchemyError as exc:
+        logger.exception("Database connection failed.")
+        raise HTTPException(status_code=503, detail=f"Database connection failed: {exc.__class__.__name__}") from exc
     try:
         yield db
     finally:
