@@ -24,19 +24,6 @@ export default function Login() {
     /iphone|ipad|android/i.test(navigator.userAgent) &&
     localStorage.getItem('hunch-biometric-enabled') === '1';
 
-  const handleDemoLogin = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      await login('demo@potbnk.app', 'DemoLogin#2026!');
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Demo login failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -174,8 +161,6 @@ export default function Login() {
                       <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-bank-dark focus:outline-none">{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}</button>
                     </div>
                     <button type="submit" disabled={loading} className="hnt-btn-primary w-full mt-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"><Lock size={15} /> {loading ? 'Signing in…' : 'Log In'}</button>
-                    <div className="relative flex items-center gap-2 my-1"><div className="flex-1 border-t border-gray-200" /><span className="text-[11px] text-gray-400 font-medium shrink-0">or</span><div className="flex-1 border-t border-gray-200" /></div>
-                    <button type="button" disabled={loading} onClick={handleDemoLogin} className="w-full py-2.5 rounded-lg border-2 border-bank-teal text-bank-teal text-sm font-semibold hover:bg-bank-teal hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{loading ? 'Signing in…' : 'Try Demo Account'}</button>
                   </>
                 ) : (
                   <>
@@ -200,9 +185,6 @@ export default function Login() {
                 </a>
                 <Link to="/forgot-password" className="text-xs text-bank-teal hover:underline font-medium">
                   Forgot Password?
-                </Link>
-                <Link to="/admin/login" className="text-xs text-gray-500 hover:text-bank-dark hover:underline font-medium sm:ml-auto">
-                  Admin Access
                 </Link>
               </div>
 
