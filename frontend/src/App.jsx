@@ -8,6 +8,7 @@ import Transfer from './pages/Transfer'
 import Withdraw from './pages/Withdraw'
 import Deposit from './pages/Deposit'
 import Settings from './pages/Settings'
+import LoginActivity from './pages/LoginActivity'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import NotFound from './pages/NotFound'
@@ -106,6 +107,10 @@ export default function App() {
       <Route
         path="/settings"
         element={<ProtectedRoute><Settings /></ProtectedRoute>}
+      />
+      <Route
+        path="/login-activity"
+        element={<ProtectedRoute><LoginActivity /></ProtectedRoute>}
       />
       <Route
         path="/admin"

@@ -51,6 +51,9 @@ _LIGHTWEIGHT_MIGRATIONS = [
     "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(80)",
     "CREATE UNIQUE INDEX IF NOT EXISTS ix_transactions_idempotency_key ON transactions (idempotency_key)",
     "CREATE INDEX IF NOT EXISTS ix_transactions_status ON transactions (status)",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(255)",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN NOT NULL DEFAULT false",
+    "CREATE INDEX IF NOT EXISTS ix_users_totp_enabled ON users (totp_enabled)",
 ]
 
 

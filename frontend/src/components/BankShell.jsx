@@ -55,7 +55,7 @@ export default function BankShell({ children, title }) {
   }, [dark]);
 
   useEffect(() => {
-    api.get('/accounts/transactions?limit=5')
+    api.get('/auth/notifications')
       .then(({ data }) => setNotifications(data))
       .catch(() => {});
   }, []);
@@ -95,17 +95,14 @@ export default function BankShell({ children, title }) {
     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
   });
 
-  const notifDotCls = (type) => {
-    if (type === 'DEPOSIT')    return 'bg-emerald-500';
-    if (type === 'WITHDRAWAL') return 'bg-red-500';
-    return 'bg-sky-500';
+  const notifDotCls = (category) => {
+    if (category === 'SECURITY') return 'bg-amber-500';
+    if (category === 'TRANSFER') return 'bg-sky-500';
+    if (category === 'DEPOSIT')  return 'bg-emerald-500';
+    if (category === 'WITHDRAWAL') return 'bg-red-500';
+    return 'bg-slate-400';
   };
-  const notifLabel = (tx) => {
-    const amt = '$' + parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 });
-    if (tx.type === 'DEPOSIT')    return `Deposit received · ${amt}`;
-    if (tx.type === 'WITHDRAWAL') return `Withdrawal · ${amt}`;
-    return `Transfer · ${amt}`;
-  };
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f0f4f2] dark:bg-[#0a0f0e] transition-colors duration-300 overflow-x-hidden">
@@ -160,7 +157,7 @@ export default function BankShell({ children, title }) {
                 className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/10 text-white/60 hover:text-white transition-colors relative"
               >
                 <Bell size={17} />
-                {notifications.length > 0 && (
+                {unreadCount > 0 && (
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-[#041f1c]" />
                 )}
               </button>
@@ -178,13 +175,22 @@ export default function BankShell({ children, title }) {
                     </div>
                   ) : (
                     <ul>
-                      {notifications.map((tx) => (
-                        <li key={tx.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-b border-slate-50 dark:border-white/5 last:border-0">
-                          <div className={`w-2 h-2 rounded-full shrink-0 ${notifDotCls(tx.type)}`} />
+                      {notifications.map((n) => (
+                        <li key={n.id} className={`flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-b border-slate-50 dark:border-white/5 last:border-0 ${!n.is_read ? 'bg-slate-50/60 dark:bg-white/[0.03]' : ''}`}>
+                          <div className={`w-2 h-2 rounded-full shrink-0 mt-1 ${notifDotCls(n.category)}`} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-slate-700 dark:text-white/80 truncate">{notifLabel(tx)}</p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">{timeAgo(tx.created_at)}</p>
+                            <p className="text-xs font-semibold text-slate-700 dark:text-white/80 truncate">{n.title}</p>
+                            <p className="text-[10px] text-slate-500 dark:text-white/50 truncate mt-0.5">{n.body}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{timeAgo(n.created_at)}</p>
                           </div>
+                          {!n.is_read && (
+                            <button
+                              onClick={async (e) => { e.stopPropagation(); await api.patch(`/auth/notifications/${n.id}/read`); setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, is_read: true } : x)); }}
+                              className="text-[10px] font-semibold text-bank-teal hover:underline shrink-0"
+                            >
+                              Mark read
+                            </button>
+                          )}
                         </li>
                       ))}
                     </ul>

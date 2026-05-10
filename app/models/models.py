@@ -19,6 +19,8 @@ class User(Base):
 	full_name = Column(String(255), nullable=False)
 	email = Column(String(255), unique=True, nullable=False, index=True)
 	hashed_password = Column(String(255), nullable=False)
+	totp_secret = Column(String(255), nullable=True)
+	totp_enabled = Column(Boolean, default=False, nullable=False)
 	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
 	accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
@@ -89,6 +91,43 @@ class ScheduledTransfer(Base):
 	last_run_at = Column(DateTime(timezone=True), nullable=True)
 	run_count = Column(Integer, default=0, nullable=False)
 	status = Column(String(20), default="ACTIVE", nullable=False, index=True)  # ACTIVE, PAUSED, COMPLETED, FAILED
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class LoginAttempt(Base):
+	__tablename__ = "login_attempts"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
+	email = Column(String(255), nullable=False, index=True)
+	ip_address = Column(String(45), nullable=False)
+	user_agent = Column(String(500), nullable=True)
+	device = Column(String(120), nullable=True)
+	success = Column(Boolean, default=False, nullable=False)
+	failure_reason = Column(String(120), nullable=True)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class Notification(Base):
+	__tablename__ = "notifications"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+	category = Column(String(40), nullable=False, index=True)  # SECURITY, TRANSFER, DEPOSIT, etc.
+	title = Column(String(200), nullable=False)
+	body = Column(Text, nullable=False)
+	is_read = Column(Boolean, default=False, nullable=False)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class Dispute(Base):
+	__tablename__ = "disputes"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+	transaction_id = Column(UUID(as_uuid=True), ForeignKey("transactions.id"), nullable=False, index=True)
+	reason = Column(Text, nullable=False)
+	status = Column(String(20), default="OPEN", nullable=False, index=True)  # OPEN, REVIEWING, RESOLVED, REJECTED
 	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
 

@@ -5,6 +5,7 @@ import BankShell from '../components/BankShell';
 import {
   CheckCircle, User, Lock, Bell, CreditCard, Palette,
   Mail, Calendar, Shield, Plus, X, Moon, Sun, Fingerprint, Laptop, Smartphone, MapPin, Clock3,
+  KeyRound, Activity, ChevronRight,
 } from 'lucide-react';
 
 // ── Toggle Switch ────────────────────────────────────────────────────────────
@@ -56,6 +57,13 @@ export default function Settings() {
   // Appearance
   const [dark, setDark] = useState(() => localStorage.getItem('hunch-theme') === 'dark');
   const [biometricEnabled, setBiometricEnabled] = useState(() => localStorage.getItem('hunch-biometric-enabled') === '1');
+
+  // TOTP
+  const [totpSetup, setTOTPSetup] = useState(null);
+  const [totpCode, setTOTPCode] = useState('');
+  const [totpLoading, setTOTPLoading] = useState(false);
+  const [totpMsg, setTOTPMsg] = useState('');
+  const [totpErr, setTOTPErr] = useState('');
 
   // Nav
   const [activeTab, setActiveTab] = useState('profile');
@@ -153,6 +161,47 @@ export default function Settings() {
       setOpenAcctError(err.response?.data?.detail || 'Failed to open account.');
     } finally {
       setOpenAcctLoading(false);
+    }
+  };
+
+  const handleTOTPSetup = async () => {
+    setTOTPErr(''); setTOTPMsg(''); setTOTPLoading(true);
+    try {
+      const { data } = await api.post('/auth/totp/setup');
+      setTOTPSetup(data);
+    } catch (err) {
+      setTOTPErr(err.response?.data?.detail || 'TOTP setup failed.');
+    } finally {
+      setTOTPLoading(false);
+    }
+  };
+
+  const handleTOTPVerify = async () => {
+    setTOTPErr(''); setTOTPMsg(''); setTOTPLoading(true);
+    try {
+      await api.post('/auth/totp/verify', { code: totpCode });
+      setTOTPMsg('Two-factor authentication enabled.');
+      setTOTPSetup(null);
+      setTOTPCode('');
+      await fetchMe();
+    } catch (err) {
+      setTOTPErr(err.response?.data?.detail || 'Invalid code.');
+    } finally {
+      setTOTPLoading(false);
+    }
+  };
+
+  const handleTOTPDisable = async () => {
+    setTOTPErr(''); setTOTPMsg(''); setTOTPLoading(true);
+    try {
+      await api.post('/auth/totp/disable', { code: totpCode });
+      setTOTPMsg('Two-factor authentication disabled.');
+      setTOTPCode('');
+      await fetchMe();
+    } catch (err) {
+      setTOTPErr(err.response?.data?.detail || 'Invalid code.');
+    } finally {
+      setTOTPLoading(false);
     }
   };
 
@@ -325,6 +374,45 @@ export default function Settings() {
                 </form>
 
                 <div className="mt-6 pt-6 border-t border-slate-50 dark:border-white/5 space-y-4">
+                  {/* TOTP Section */}
+                  <div className="rounded-xl border border-slate-100 dark:border-white/10 p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                        <KeyRound size={16} className="text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700 dark:text-white/80">Two-Factor Authentication</p>
+                        <p className="text-xs text-slate-400">Add an extra layer of security with an authenticator app</p>
+                      </div>
+                    </div>
+                    {totpMsg && <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 text-sm rounded-xl px-4 py-3 mb-3"><CheckCircle size={15} /> {totpMsg}</div>}
+                    {totpErr && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3 mb-3">{totpErr}</div>}
+                    {user?.totp_enabled ? (
+                      <div className="space-y-3">
+                        <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">Two-factor authentication is enabled.</p>
+                        <div className="flex gap-2">
+                          <input type="text" inputMode="numeric" maxLength={6} value={totpCode} onChange={(e) => setTOTPCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Enter code to disable" className="flex-1 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#063b36]" />
+                          <button onClick={handleTOTPDisable} disabled={totpLoading} className="bg-red-600 text-white font-semibold px-4 py-2.5 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 text-sm shrink-0">{totpLoading ? '…' : 'Disable'}</button>
+                        </div>
+                      </div>
+                    ) : totpSetup ? (
+                      <div className="space-y-3">
+                        <p className="text-sm text-slate-600 dark:text-white/60">Scan the QR code with your authenticator app, then enter the code below to confirm.</p>
+                        <div className="flex justify-center">
+                          <img src={totpSetup.qr_base64} alt="TOTP QR Code" className="rounded-xl border border-slate-200 dark:border-white/10" />
+                        </div>
+                        <p className="text-xs text-slate-400 text-center">Or enter this secret manually: <span className="font-mono text-slate-600 dark:text-white/70">{totpSetup.secret}</span></p>
+                        <div className="flex gap-2">
+                          <input type="text" inputMode="numeric" maxLength={6} value={totpCode} onChange={(e) => setTOTPCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit code" className="flex-1 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#063b36]" />
+                          <button onClick={handleTOTPVerify} disabled={totpLoading} className="bg-[#063b36] text-white font-semibold px-4 py-2.5 rounded-xl hover:bg-[#041f1c] transition-colors disabled:opacity-50 text-sm shrink-0">{totpLoading ? '…' : 'Enable'}</button>
+                        </div>
+                        <button onClick={() => { setTOTPSetup(null); setTOTPCode(''); setTOTPErr(''); }} className="text-xs text-bank-teal hover:underline font-medium">Cancel setup</button>
+                      </div>
+                    ) : (
+                      <button onClick={handleTOTPSetup} disabled={totpLoading} className="bg-[#063b36] text-white font-semibold px-4 py-2.5 rounded-xl hover:bg-[#041f1c] transition-colors disabled:opacity-50 text-sm">{totpLoading ? 'Setting up…' : 'Set up 2FA'}</button>
+                    )}
+                  </div>
+
                   <div className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-white/10 p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center">
@@ -337,6 +425,19 @@ export default function Settings() {
                     </div>
                     <Toggle checked={biometricEnabled} onChange={setBiometricEnabled} />
                   </div>
+
+                  <a href="/login-activity" className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-white/10 p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center">
+                        <Activity size={16} className="text-slate-600 dark:text-white/60" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700 dark:text-white/80">Login Activity</p>
+                        <p className="text-xs text-slate-400">View recent sign-ins and device history</p>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-slate-400" />
+                  </a>
 
                   <div className="rounded-xl border border-slate-100 dark:border-white/10 p-4">
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Trusted Devices & Activity</p>

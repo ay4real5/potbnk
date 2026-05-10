@@ -45,3 +45,54 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
+
+
+class TOTPSetupResponse(BaseModel):
+    secret: str
+    provisioning_uri: str
+    qr_base64: str
+
+
+class TOTPVerifyRequest(BaseModel):
+    code: str
+
+
+class TOTPLoginRequest(BaseModel):
+    temp_token: str
+    code: str
+
+
+class StepUpRequest(BaseModel):
+    code: str
+
+
+class LoginActivityResponse(BaseModel):
+    id: uuid.UUID
+    ip_address: str
+    user_agent: Optional[str]
+    device: Optional[str]
+    success: bool
+    failure_reason: Optional[str]
+    created_at: str
+
+
+class NotificationResponse(BaseModel):
+    id: uuid.UUID
+    category: str
+    title: str
+    body: str
+    is_read: bool
+    created_at: str
+
+
+class DisputeCreate(BaseModel):
+    transaction_id: uuid.UUID
+    reason: str
+
+
+class DisputeResponse(BaseModel):
+    id: uuid.UUID
+    transaction_id: uuid.UUID
+    reason: str
+    status: str
+    created_at: str

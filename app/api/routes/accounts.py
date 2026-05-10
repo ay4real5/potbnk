@@ -5,7 +5,8 @@ from sqlalchemy.exc import IntegrityError
 from app.core.database import get_db
 from app.core.ledger import perform_transfer, perform_external_transfer, perform_deposit, perform_withdrawal
 from app.api.routes.auth import get_current_user
-from app.models.models import User, Account, Transaction
+from app.models.models import User, Account, Transaction, Notification
+from app.api.routes.auth import _create_notification
 from app.schemas.accounts import (
     AccountResponse,
     TransactionResponse,
@@ -208,6 +209,7 @@ def deposit(
     try:
         tx = perform_deposit(db, payload.account_id, payload.amount, payload.description)
         db.refresh(account)
+        _create_notification(db, current_user.id, "DEPOSIT", f"Deposit of ${payload.amount:,.2f}", f"To your {account.account_type.replace('_', ' ')} account.")
         return {
             "status": "success",
             "message": f"${payload.amount:,.2f} deposited successfully.",
@@ -262,6 +264,7 @@ def transfer(
             idempotency_key=payload.idempotency_key,
         )
         db.refresh(sender)
+        _create_notification(db, current_user.id, "TRANSFER", f"Transfer of ${payload.amount:,.2f}", f"You transferred ${payload.amount:,.2f} to account {payload.receiver_account_id}.")
         return {
             "status": "success",
             "message": f"${payload.amount:,.2f} transferred successfully.",
@@ -307,6 +310,7 @@ def external_transfer(
             payload.description
         )
         db.refresh(sender)
+        _create_notification(db, current_user.id, "TRANSFER", f"External transfer of ${payload.amount:,.2f}", f"Scheduled to {payload.recipient_bank}.")
         return {
             "status": "success",
             "message": f"${payload.amount:,.2f} scheduled to {payload.recipient_bank}.",
@@ -333,6 +337,7 @@ def withdraw(
     try:
         tx = perform_withdrawal(db, payload.account_id, payload.amount, payload.description)
         db.refresh(account)
+        _create_notification(db, current_user.id, "WITHDRAWAL", f"Withdrawal of ${payload.amount:,.2f}", f"From your {account.account_type.replace('_', ' ')} account.")
         return {
             "status": "success",
             "message": f"${payload.amount:,.2f} withdrawn successfully.",

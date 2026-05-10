@@ -5,6 +5,7 @@ import BankShell from '../components/BankShell';
 import {
   ArrowLeft, Search, Download, X, FileText,
   PlusCircle, MinusCircle, ArrowLeftRight, Filter,
+  AlertTriangle, Send,
 } from 'lucide-react';
 
 const PAGE_SIZE = 10;
@@ -65,6 +66,13 @@ export default function Transactions() {
   const [searchText, setSearchText]   = useState('');
   const [dateFilter, setDateFilter]   = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Dispute
+  const [disputeTx, setDisputeTx] = useState(null);
+  const [disputeReason, setDisputeReason] = useState('');
+  const [disputeLoading, setDisputeLoading] = useState(false);
+  const [disputeMsg, setDisputeMsg] = useState('');
+  const [disputeErr, setDisputeErr] = useState('');
 
   const buildUrl = useCallback(() => {
     const base = selectedAccId
@@ -325,6 +333,7 @@ export default function Transactions() {
                     <th className="px-5 py-3 text-center">Type</th>
                     <th className="px-5 py-3 text-right">Amount</th>
                     {account && <th className="px-5 py-3 text-right hidden md:table-cell">Balance</th>}
+                    <th className="px-5 py-3 text-right" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-white/5">
@@ -365,6 +374,16 @@ export default function Transactions() {
                               : '—'}
                           </td>
                         )}
+                        <td className="px-5 py-3.5 text-right">
+                          {tx.type !== 'DEPOSIT' && (
+                            <button
+                              onClick={() => { setDisputeTx(tx); setDisputeReason(''); setDisputeMsg(''); setDisputeErr(''); }}
+                              className="text-[10px] font-semibold text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                            >
+                              Dispute
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -408,6 +427,53 @@ export default function Transactions() {
           </>
         )}
       </div>
+
+      {disputeTx && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#111a18]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+                <AlertTriangle size={16} className="text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm">Dispute Transaction</h3>
+                <p className="text-xs text-slate-400">{disputeTx.description || disputeTx.type} · ${parseFloat(disputeTx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+              </div>
+            </div>
+            {disputeMsg && <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 text-sm rounded-xl px-4 py-3 mb-3"><CheckCircle size={15} /> {disputeMsg}</div>}
+            {disputeErr && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3 mb-3">{disputeErr}</div>}
+            <textarea
+              value={disputeReason}
+              onChange={(e) => setDisputeReason(e.target.value)}
+              placeholder="Describe why you are disputing this transaction..."
+              className="w-full border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm bg-white dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#063b36] min-h-[100px] resize-none"
+            />
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button type="button" onClick={() => setDisputeTx(null)} className="rounded-xl border border-slate-200 py-3 font-semibold text-slate-600 dark:border-white/10 dark:text-white/70">Cancel</button>
+              <button
+                type="button"
+                disabled={disputeLoading || !disputeReason.trim()}
+                onClick={async () => {
+                  setDisputeLoading(true);
+                  try {
+                    await api.post('/disputes/', { transaction_id: disputeTx.id, reason: disputeReason.trim() });
+                    setDisputeMsg('Dispute submitted successfully.');
+                    setDisputeReason('');
+                    setTimeout(() => setDisputeTx(null), 1500);
+                  } catch (err) {
+                    setDisputeErr(err.response?.data?.detail || 'Failed to submit dispute.');
+                  } finally {
+                    setDisputeLoading(false);
+                  }
+                }}
+                className="rounded-xl bg-[#063b36] py-3 font-semibold text-white hover:bg-[#041f1c] disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Send size={14} /> {disputeLoading ? 'Submitting…' : 'Submit Dispute'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </BankShell>
   );
 }

@@ -7,13 +7,27 @@ from app.core.database import SessionLocal, get_engine, get_db
 from app.core.config import get_settings
 from app.core.security import verify_password, get_password_hash, create_access_token, decode_token
 from app.core.state import locked_users as _locked_users, reset_tokens as _reset_tokens
-from app.models.models import User, Account
-from app.schemas.auth import UserRegister, TokenResponse, UserProfile, UserUpdate, ForgotPasswordRequest, ResetPasswordRequest
+from app.models.models import User, Account, LoginAttempt, Notification
+from app.schemas.auth import (
+    UserRegister, TokenResponse, UserProfile, UserUpdate,
+    ForgotPasswordRequest, ResetPasswordRequest,
+    TOTPSetupResponse, TOTPVerifyRequest, TOTPLoginRequest,
+    LoginActivityResponse, NotificationResponse,
+)
 import uuid
 import secrets
 import time
+import base64
+import io
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
+
+try:
+    import pyotp
+    import qrcode
+    _TOTP_AVAILABLE = True
+except Exception:
+    _TOTP_AVAILABLE = False
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -52,6 +66,56 @@ def _client_ip(request: Request) -> str:
 
 def generate_account_number():
     return f"PRO-{secrets.randbelow(9000000000) + 1000000000}"
+
+
+# ── Temporary tokens for TOTP two-step login ──────────────────────────────────
+_temp_tokens: dict = {}
+_TEMP_TOKEN_TTL = timedelta(minutes=5)
+
+
+def _create_temp_token(user_id: str) -> str:
+    token = secrets.token_urlsafe(32)
+    _temp_tokens[token] = {"user_id": user_id, "expires_at": datetime.now(timezone.utc) + _TEMP_TOKEN_TTL}
+    return token
+
+
+def _consume_temp_token(token: str) -> str | None:
+    data = _temp_tokens.get(token)
+    if not data:
+        return None
+    if datetime.now(timezone.utc) > data["expires_at"]:
+        del _temp_tokens[token]
+        return None
+    del _temp_tokens[token]
+    return data["user_id"]
+
+
+def _record_login_attempt(db: Session, email: str, ip: str, user_agent: str | None, success: bool, user_id=None, failure_reason=None):
+    device = (user_agent or "").split(" ")[0][:120] if user_agent else None
+    attempt = LoginAttempt(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        email=email,
+        ip_address=ip,
+        user_agent=user_agent[:500] if user_agent else None,
+        device=device,
+        success=success,
+        failure_reason=failure_reason,
+    )
+    db.add(attempt)
+    db.commit()
+
+
+def _create_notification(db: Session, user_id: uuid.UUID, category: str, title: str, body: str):
+    note = Notification(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        category=category,
+        title=title,
+        body=body,
+    )
+    db.add(note)
+    db.commit()
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -168,42 +232,13 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
         raise HTTPException(status_code=503, detail=f"Database error during registration: {exc.__class__.__name__}") from exc
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login")
 def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
     settings = get_settings()
-    _check_rate_limit(_client_ip(request))
+    client_ip = _client_ip(request)
+    _check_rate_limit(client_ip)
     normalized_email = _normalize_email(form_data.username)
-
-    if settings.demo_login_enabled and normalized_email == _normalize_email(settings.demo_login_email):
-        # Short-circuit: never touch the database for the demo account.
-        # Return 401 immediately on wrong password so Vercel doesn't hang
-        # waiting on an unreachable DB connection.
-        if form_data.password != settings.demo_login_password:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password.",
-                headers={"WWW-Authenticate": "Bearer"}
-            )
-        token = create_access_token(data={"sub": settings.demo_login_user_id, "role": "admin"})
-        return {
-            "access_token": token,
-            "token_type": "bearer",
-            "expires_in": 1800,
-        }
-
-    if settings.admin_login_enabled and normalized_email == _normalize_email(settings.admin_login_email):
-        if form_data.password != settings.admin_login_password:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password.",
-                headers={"WWW-Authenticate": "Bearer"}
-            )
-        token = create_access_token(data={"sub": normalized_email, "role": "admin"})
-        return {
-            "access_token": token,
-            "token_type": "bearer",
-            "expires_in": 1800,
-        }
+    user_agent = request.headers.get("user-agent")
 
     db = SessionLocal(bind=get_engine())
     try:
@@ -211,27 +246,50 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
     finally:
         db.close()
 
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password.",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
+    # Demo / admin short-circuit
+    if settings.demo_login_enabled and normalized_email == _normalize_email(settings.demo_login_email):
+        if form_data.password != settings.demo_login_password:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password.", headers={"WWW-Authenticate": "Bearer"})
+        token = create_access_token(data={"sub": settings.demo_login_user_id, "role": "admin"})
+        return {"access_token": token, "token_type": "bearer", "expires_in": 1800}
 
-    # Reject locked accounts at login
+    if settings.admin_login_enabled and normalized_email == _normalize_email(settings.admin_login_email):
+        if form_data.password != settings.admin_login_password:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password.", headers={"WWW-Authenticate": "Bearer"})
+        token = create_access_token(data={"sub": normalized_email, "role": "admin"})
+        return {"access_token": token, "token_type": "bearer", "expires_in": 1800}
+
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        db = SessionLocal(bind=get_engine())
+        try:
+            _record_login_attempt(db, normalized_email, client_ip, user_agent, success=False, failure_reason="Invalid password")
+        finally:
+            db.close()
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password.", headers={"WWW-Authenticate": "Bearer"})
+
     if str(user.id) in _locked_users:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account has been locked. Please contact support.",
-        )
+        db = SessionLocal(bind=get_engine())
+        try:
+            _record_login_attempt(db, normalized_email, client_ip, user_agent, success=False, user_id=user.id, failure_reason="Account locked")
+        finally:
+            db.close()
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account has been locked. Please contact support.")
+
+    # Two-step TOTP
+    if user.totp_enabled and user.totp_secret:
+        temp_token = _create_temp_token(str(user.id))
+        return {"temp_token": temp_token, "requires_totp": True}
+
+    # Standard login
+    db = SessionLocal(bind=get_engine())
+    try:
+        _record_login_attempt(db, normalized_email, client_ip, user_agent, success=True, user_id=user.id)
+        _create_notification(db, user.id, "SECURITY", "New login detected", f"Login from {client_ip} at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}.")
+    finally:
+        db.close()
 
     token = create_access_token(data={"sub": str(user.id)})
-
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "expires_in": 1800
-    }
+    return {"access_token": token, "token_type": "bearer", "expires_in": 1800}
 
 
 @router.get("/me", response_model=UserProfile)
@@ -329,3 +387,153 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
     del _reset_tokens[payload.token]
 
     return {"status": "success", "message": "Password updated. You can now sign in with your new password."}
+
+
+@router.post("/totp/setup", response_model=TOTPSetupResponse)
+def totp_setup(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not _TOTP_AVAILABLE:
+        raise HTTPException(status_code=503, detail="TOTP service unavailable.")
+    if current_user.totp_enabled:
+        raise HTTPException(status_code=400, detail="TOTP is already enabled. Disable it first to reconfigure.")
+    secret = pyotp.random_base32()
+    user = db.query(User).filter(User.id == current_user.id).first()
+    user.totp_secret = secret
+    db.commit()
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(name=user.email, issuer_name="Hunch Banking")
+    img = qrcode.make(uri)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    qr_base64 = base64.b64encode(buf.getvalue()).decode()
+    return {"secret": secret, "provisioning_uri": uri, "qr_base64": f"data:image/png;base64,{qr_base64}"}
+
+
+@router.post("/totp/verify")
+def totp_verify(payload: TOTPVerifyRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not _TOTP_AVAILABLE:
+        raise HTTPException(status_code=503, detail="TOTP service unavailable.")
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if not user.totp_secret:
+        raise HTTPException(status_code=400, detail="TOTP is not configured.")
+    totp = pyotp.TOTP(user.totp_secret)
+    if not totp.verify(payload.code, valid_window=1):
+        raise HTTPException(status_code=400, detail="Invalid verification code.")
+    user.totp_enabled = True
+    db.commit()
+    return {"status": "success", "message": "Two-factor authentication enabled."}
+
+
+@router.post("/totp/disable")
+def totp_disable(payload: TOTPVerifyRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not _TOTP_AVAILABLE:
+        raise HTTPException(status_code=503, detail="TOTP service unavailable.")
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if not user.totp_secret or not user.totp_enabled:
+        raise HTTPException(status_code=400, detail="TOTP is not enabled.")
+    totp = pyotp.TOTP(user.totp_secret)
+    if not totp.verify(payload.code, valid_window=1):
+        raise HTTPException(status_code=400, detail="Invalid verification code.")
+    user.totp_secret = None
+    user.totp_enabled = False
+    db.commit()
+    return {"status": "success", "message": "Two-factor authentication disabled."}
+
+
+@router.post("/totp/verify-login", response_model=TokenResponse)
+def totp_verify_login(payload: TOTPLoginRequest, request: Request):
+    if not _TOTP_AVAILABLE:
+        raise HTTPException(status_code=503, detail="TOTP service unavailable.")
+    user_id = _consume_temp_token(payload.temp_token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Session expired. Please log in again.")
+    db = SessionLocal(bind=get_engine())
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user or not user.totp_secret:
+            raise HTTPException(status_code=401, detail="Invalid session.")
+        totp = pyotp.TOTP(user.totp_secret)
+        if not totp.verify(payload.code, valid_window=1):
+            raise HTTPException(status_code=401, detail="Invalid verification code.")
+        token = create_access_token(data={"sub": str(user.id)})
+        _record_login_attempt(db, user.email, _client_ip(request), request.headers.get("user-agent"), success=True, user_id=user.id)
+        _create_notification(db, user.id, "SECURITY", "New login detected", f"Login from {_client_ip(request)} at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}.")
+        return {"access_token": token, "token_type": "bearer", "expires_in": 1800}
+    finally:
+        db.close()
+
+
+@router.post("/step-up")
+def step_up_verify(payload: StepUpRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not _TOTP_AVAILABLE:
+        raise HTTPException(status_code=503, detail="TOTP service unavailable.")
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if not user or not user.totp_enabled or not user.totp_secret:
+        raise HTTPException(status_code=400, detail="TOTP is not enabled on this account.")
+    totp = pyotp.TOTP(user.totp_secret)
+    if not totp.verify(payload.code, valid_window=1):
+        raise HTTPException(status_code=401, detail="Invalid verification code.")
+    return {"status": "success", "verified": True}
+
+
+@router.get("/login-activity", response_model=list[LoginActivityResponse])
+def login_activity(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    attempts = (
+        db.query(LoginAttempt)
+        .filter(LoginAttempt.user_id == current_user.id)
+        .order_by(LoginAttempt.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    return [
+        {
+            "id": a.id,
+            "ip_address": a.ip_address,
+            "user_agent": a.user_agent,
+            "device": a.device,
+            "success": a.success,
+            "failure_reason": a.failure_reason,
+            "created_at": str(a.created_at),
+        }
+        for a in attempts
+    ]
+
+
+@router.get("/notifications", response_model=list[NotificationResponse])
+def list_notifications(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    notes = (
+        db.query(Notification)
+        .filter(Notification.user_id == current_user.id)
+        .order_by(Notification.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    return [
+        {
+            "id": n.id,
+            "category": n.category,
+            "title": n.title,
+            "body": n.body,
+            "is_read": n.is_read,
+            "created_at": str(n.created_at),
+        }
+        for n in notes
+    ]
+
+
+@router.patch("/notifications/{notification_id}/read")
+def mark_notification_read(notification_id: uuid.UUID, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    note = db.query(Notification).filter(Notification.id == notification_id, Notification.user_id == current_user.id).first()
+    if not note:
+        raise HTTPException(status_code=404, detail="Notification not found.")
+    note.is_read = True
+    db.commit()
+    return {"status": "success"}
+
+
+@router.delete("/notifications/{notification_id}", status_code=204)
+def delete_notification(notification_id: uuid.UUID, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    note = db.query(Notification).filter(Notification.id == notification_id, Notification.user_id == current_user.id).first()
+    if not note:
+        raise HTTPException(status_code=404, detail="Notification not found.")
+    db.delete(note)
+    db.commit()
+    return None

@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 
 const QUICK_AMOUNTS = [25, 50, 100, 250, 500, 1000];
 const DAILY_LIMIT = 10000;
+const STEP_UP_THRESHOLD = 1000;
 
 const TRANSFER_TYPES = {
   between: { label: 'Between my accounts', speed: 'Instant', fee: 0, icon: Repeat, limit: 10000 },
@@ -115,6 +116,10 @@ export default function Transfer() {
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleFrequency, setScheduleFrequency] = useState('ONCE');
   const [scheduledList, setScheduledList] = useState([]);
+  const [stepUpCode, setStepUpCode] = useState('');
+  const [stepUpRequired, setStepUpRequired] = useState(false);
+  const [stepUpVerifying, setStepUpVerifying] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
   const debounceRef = useRef(null);
   const toast = useToast();
 
@@ -127,6 +132,7 @@ export default function Transfer() {
       if (data.length > 0) setForm((f) => ({ ...f, sender_account_id: data[0].id }));
     }).catch(() => toast.error('Unable to load your accounts.'));
     api.get('/accounts/transactions?limit=4').then(({ data }) => setRecentTx(data)).catch(() => {});
+    api.get('/auth/me').then(({ data }) => setUserProfile(data)).catch(() => {});
     refreshBeneficiaries();
     refreshScheduled();
   }, []);
@@ -184,12 +190,27 @@ export default function Transfer() {
       toast.error(exceedsBalance ? 'Amount exceeds available balance.' : exceedsLimit ? 'This transfer exceeds the selected method limit.' : 'Complete transfer details before reviewing.');
       return;
     }
+    const needsStepUp = amount >= STEP_UP_THRESHOLD && userProfile?.totp_enabled;
+    setStepUpRequired(needsStepUp);
+    setStepUpCode('');
     setReviewing(true);
   };
 
   const submitTransfer = async () => {
     setLoading(true);
     try {
+      // Step-up verification for large transfers
+      if (stepUpRequired) {
+        if (!stepUpCode || stepUpCode.length < 6) {
+          toast.error('Enter the 6-digit verification code to confirm this transfer.');
+          setLoading(false);
+          return;
+        }
+        setStepUpVerifying(true);
+        await api.post('/auth/step-up', { code: stepUpCode });
+        setStepUpVerifying(false);
+      }
+
       const payload = { ...form, amount };
       const externalPayload = {
         ...payload,
@@ -451,9 +472,16 @@ export default function Transfer() {
               <div className="flex justify-between"><span>Fee</span><span className="font-semibold">${formatMoney(fee)}</span></div>
               <div className="flex justify-between"><span>Delivery</span><span className="font-semibold text-right">{selectedType.speed}</span></div>
             </div>
+            {stepUpRequired && (
+              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Step-up verification required</p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">Enter your authenticator app code to confirm this large transfer.</p>
+                <input type="text" inputMode="numeric" maxLength={6} value={stepUpCode} onChange={(e) => setStepUpCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" className="mt-3 w-full rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-amber-400 dark:border-amber-700 dark:bg-white/5 dark:text-white" />
+              </div>
+            )}
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <button type="button" onClick={() => setReviewing(false)} className="rounded-xl border border-slate-200 py-3 font-semibold text-slate-600 dark:border-white/10 dark:text-white/70">Edit</button>
-              <button type="button" disabled={loading} onClick={submitTransfer} className="rounded-xl bg-[#063b36] py-3 font-semibold text-white hover:bg-[#041f1c] disabled:opacity-50">{loading ? 'Processing...' : 'Confirm transfer'}</button>
+              <button type="button" onClick={() => { setReviewing(false); setStepUpRequired(false); setStepUpCode(''); }} className="rounded-xl border border-slate-200 py-3 font-semibold text-slate-600 dark:border-white/10 dark:text-white/70">Edit</button>
+              <button type="button" disabled={loading || stepUpVerifying} onClick={submitTransfer} className="rounded-xl bg-[#063b36] py-3 font-semibold text-white hover:bg-[#041f1c] disabled:opacity-50">{stepUpVerifying ? 'Verifying…' : loading ? 'Processing...' : 'Confirm transfer'}</button>
             </div>
           </div>
         </div>
