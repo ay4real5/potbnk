@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import api from '../api/client';
 import BankShell from '../components/BankShell';
-import { AlertTriangle, ArrowRight, Building2, CalendarClock, CheckCircle, Clock, Landmark, Repeat, Save, Search, ShieldCheck, Star, Trash2, UserCheck, Users, Zap } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Building2, CalendarClock, CheckCircle, Clock, CreditCard, Landmark, Repeat, Save, Search, ShieldCheck, Star, Trash2, UserCheck, Users, Zap } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 const QUICK_AMOUNTS = [25, 50, 100, 250, 500, 1000];
@@ -92,6 +92,35 @@ const US_BANKS = [
   'Suncoast Credit Union',
   'Other bank',
 ];
+
+const BANK_META = {
+  'Bank of America': { color: '#E31837', initials: 'BA' },
+  'Chase Bank': { color: '#117ACA', initials: 'C' },
+  'Wells Fargo': { color: '#D71E28', initials: 'WF' },
+  'Citibank': { color: '#00A3E0', initials: 'C' },
+  'Capital One': { color: '#004977', initials: 'CO' },
+  'U.S. Bank': { color: '#1B6FAD', initials: 'US' },
+  'PNC Bank': { color: '#F47B20', initials: 'PNC' },
+  'Truist Bank': { color: '#5E3A8C', initials: 'T' },
+  'Ally Bank': { color: '#5C068C', initials: 'A' },
+  'SoFi Bank': { color: '#0055A5', initials: 'S' },
+  'Discover Bank': { color: '#FF6000', initials: 'D' },
+  'Synchrony Bank': { color: '#003B5C', initials: 'SY' },
+  'Chime': { color: '#23B24B', initials: 'CH' },
+  'Marcus by Goldman Sachs': { color: '#7399C6', initials: 'GS' },
+  'Charles Schwab Bank': { color: '#0072CE', initials: 'CS' },
+  'Navy Federal Credit Union': { color: '#003B5C', initials: 'NF' },
+};
+
+function getBankStyle(name) {
+  if (BANK_META[name]) return BANK_META[name];
+  const words = name.split(' ').filter(w => w.length > 2);
+  const initials = words.slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash % 360);
+  return { color: `hsl(${hue}, 60%, 42%)`, initials: initials || 'BK' };
+}
 
 const formatMoney = (value) => Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -352,39 +381,130 @@ export default function Transfer() {
                   {lookupError && <p className="mt-2 text-sm text-red-600">{lookupError}</p>}
                 </div>
               ) : (
-                <div className="mt-4 space-y-4">
-                  {beneficiaries.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Users size={16} className="text-slate-400" />
-                      <select value="" onChange={(e) => {
-                        const b = beneficiaries.find((x) => x.id === e.target.value);
-                        if (!b) return;
-                        setExternalForm({ recipient_name: b.recipient_name, recipient_bank: b.bank_name, recipient_account_number: b.account_number, routing_number: b.routing_number || '' });
-                      }} className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white">
-                        <option value="">Choose a saved payee</option>
-                        {beneficiaries.filter((b) => !b.is_internal).map((b) => <option key={b.id} value={b.id}>{b.nickname ? `${b.nickname} — ` : ''}{b.recipient_name} · {b.bank_name}</option>)}
-                      </select>
+                <div className="mt-4 space-y-5">
+                  {/* Saved payees as visual chips */}
+                  {beneficiaries.filter((b) => !b.is_internal).length > 0 && (
+                    <div>
+                      <div className="mb-2 flex items-center gap-2">
+                        <Users size={14} className="text-slate-400" />
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Saved payees</span>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        {beneficiaries.filter((b) => !b.is_internal).map((b) => {
+                          const bankStyle = getBankStyle(b.bank_name);
+                          return (
+                            <button
+                              key={b.id}
+                              type="button"
+                              onClick={() => setExternalForm({ recipient_name: b.recipient_name, recipient_bank: b.bank_name, recipient_account_number: b.account_number, routing_number: b.routing_number || '' })}
+                              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs hover:border-[#063b36] hover:bg-[#063b36]/5 transition dark:border-white/10 dark:bg-white/5"
+                            >
+                              <span className="flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: bankStyle.color }}>{bankStyle.initials}</span>
+                              <span className="font-medium text-slate-700 dark:text-white/70">{b.nickname || b.recipient_name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <input required value={externalForm.recipient_name} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_name: e.target.value }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Recipient full name" />
-                    <select required value={externalForm.recipient_bank} onChange={(e) => { setExternalForm((f) => ({ ...f, recipient_bank: e.target.value })); if (e.target.value !== 'Other bank') setCustomBankName(''); }} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white">
-                      <option value="">Select recipient bank</option>
-                      {US_BANKS.map((bank) => <option key={bank} value={bank}>{bank}</option>)}
-                    </select>
-                    {externalForm.recipient_bank === 'Other bank' && (
-                      <input required value={customBankName} onChange={(e) => setCustomBankName(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Enter bank name" />
+
+                  {/* Bank selector with visual cards */}
+                  <div>
+                    <label className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      <Landmark size={14} /> Recipient bank
+                    </label>
+                    {externalForm.recipient_bank ? (
+                      <div className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 dark:border-emerald-700/30 dark:bg-emerald-900/10">
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold text-white shadow-sm" style={{ backgroundColor: getBankStyle(externalForm.recipient_bank).color }}>{getBankStyle(externalForm.recipient_bank).initials}</span>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-800 dark:text-white">{externalForm.recipient_bank}</p>
+                            <p className="text-[10px] text-slate-400">ACH transfer · 1-3 business days</p>
+                          </div>
+                        </div>
+                        <button type="button" onClick={() => setExternalForm((f) => ({ ...f, recipient_bank: '' }))} className="text-xs font-semibold text-[#063b36] hover:underline">Change</button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {US_BANKS.slice(0, 8).map((bank) => {
+                            const style = getBankStyle(bank);
+                            return (
+                              <button
+                                key={bank}
+                                type="button"
+                                onClick={() => setExternalForm((f) => ({ ...f, recipient_bank: bank }))}
+                                className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 hover:border-[#063b36] hover:bg-[#063b36]/5 transition dark:border-white/10 dark:bg-white/5"
+                              >
+                                <span className="flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: style.color }}>{style.initials}</span>
+                                <span className="text-[10px] font-medium text-slate-600 dark:text-white/60 text-center leading-tight">{bank.replace(' Bank', '').replace(' of America', '')}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <select required value={externalForm.recipient_bank} onChange={(e) => { setExternalForm((f) => ({ ...f, recipient_bank: e.target.value })); if (e.target.value !== 'Other bank') setCustomBankName(''); }} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white">
+                          <option value="">More banks…</option>
+                          {US_BANKS.slice(8).map((bank) => <option key={bank} value={bank}>{bank}</option>)}
+                          <option value="Other bank">Other bank (not listed)</option>
+                        </select>
+                      </div>
                     )}
-                    <input required value={externalForm.recipient_account_number} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_account_number: e.target.value.replace(/\D/g, '') }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Account number" />
-                    <input value={externalForm.routing_number} onChange={(e) => setExternalForm((f) => ({ ...f, routing_number: e.target.value.replace(/\D/g, '') }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Routing number" />
+                    {externalForm.recipient_bank === 'Other bank' && (
+                      <input required value={customBankName} onChange={(e) => setCustomBankName(e.target.value)} className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Enter bank name" />
+                    )}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <input id="savePayee" type="checkbox" checked={savePayee} onChange={(e) => setSavePayee(e.target.checked)} className="h-4 w-4 accent-[#063b36]" />
-                    <label htmlFor="savePayee" className="text-sm text-slate-600 dark:text-white/60">Save this payee for future transfers</label>
+
+                  {/* Recipient details with icons */}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        <UserCheck size={14} /> Full name
+                      </label>
+                      <input required value={externalForm.recipient_name} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_name: e.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Recipient full name" />
+                    </div>
+                    <div>
+                      <label className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        <Building2 size={14} /> Routing number
+                      </label>
+                      <input value={externalForm.routing_number} onChange={(e) => setExternalForm((f) => ({ ...f, routing_number: e.target.value.replace(/\D/g, '') }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="9-digit routing number" />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        <CreditCard size={14} /> Account number
+                      </label>
+                      <input required value={externalForm.recipient_account_number} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_account_number: e.target.value.replace(/\D/g, '') }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Account number" />
+                    </div>
                   </div>
-                  {savePayee && (
-                    <input value={payeeNickname} onChange={(e) => setPayeeNickname(e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Nickname (optional)" />
+
+                  {/* Recipient preview card */}
+                  {externalForm.recipient_name && externalForm.recipient_bank && externalForm.recipient_account_number && (
+                    <div className="rounded-2xl border border-[#063b36]/20 bg-gradient-to-br from-[#063b36]/5 to-[#0a5a52]/5 p-4 dark:border-[#7CFC00]/20 dark:from-[#063b36]/10 dark:to-[#0a5a52]/10">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#063b36] text-white text-sm font-bold">
+                          {externalForm.recipient_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{externalForm.recipient_name}</p>
+                          <p className="text-xs text-slate-500 dark:text-white/50 flex items-center gap-1">
+                            <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: getBankStyle(externalForm.recipient_bank).color }} />
+                            {externalForm.recipient_bank}
+                          </p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">Acct ••••{externalForm.recipient_account_number.slice(-4)} {externalForm.routing_number && `· Routing ${externalForm.routing_number}`}</p>
+                        </div>
+                      </div>
+                    </div>
                   )}
+
+                  {/* Save payee */}
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex items-center gap-3">
+                      <input id="savePayee" type="checkbox" checked={savePayee} onChange={(e) => setSavePayee(e.target.checked)} className="h-4 w-4 accent-[#063b36]" />
+                      <label htmlFor="savePayee" className="text-sm font-medium text-slate-700 dark:text-white/70">Save this payee for future transfers</label>
+                    </div>
+                    {savePayee && (
+                      <input value={payeeNickname} onChange={(e) => setPayeeNickname(e.target.value)} className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Nickname (optional)" />
+                    )}
+                  </div>
                 </div>
               )}
             </section>
