@@ -60,10 +60,19 @@ _LIGHTWEIGHT_MIGRATIONS = [
 
 
 def _apply_lightweight_migrations(engine):
+    is_sqlite = engine.dialect.name == "sqlite"
     try:
         with engine.begin() as connection:
             for sql in _LIGHTWEIGHT_MIGRATIONS:
-                connection.execute(text(sql))
+                if is_sqlite and "IF NOT EXISTS" in sql:
+                    # SQLite doesn't support IF NOT EXISTS for ADD COLUMN
+                    # Try to execute; ignore if column already exists
+                    try:
+                        connection.execute(text(sql.replace(" IF NOT EXISTS", "")))
+                    except SQLAlchemyError:
+                        pass  # Column likely already exists
+                else:
+                    connection.execute(text(sql))
     except SQLAlchemyError:
         logger.exception("Lightweight migration failed; continuing with existing schema.")
 

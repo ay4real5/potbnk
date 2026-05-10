@@ -119,6 +119,8 @@ def _create_notification(db: Session, user_id: uuid.UUID, category: str, title: 
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
+    from app.core.database import ensure_schema
+    ensure_schema()
     settings = get_settings()
     payload = decode_token(token)
     if not payload:
@@ -234,6 +236,9 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
+    from app.core.database import ensure_schema
+    ensure_schema()  # Make sure tables exist before login (especially on fresh starts)
+
     settings = get_settings()
     client_ip = _client_ip(request)
     _check_rate_limit(client_ip)
@@ -263,6 +268,8 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
         db = SessionLocal(bind=get_engine())
         try:
             _record_login_attempt(db, normalized_email, client_ip, user_agent, success=False, failure_reason="Invalid password")
+        except Exception:
+            pass  # Don't let audit logging block login
         finally:
             db.close()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password.", headers={"WWW-Authenticate": "Bearer"})
@@ -271,6 +278,8 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
         db = SessionLocal(bind=get_engine())
         try:
             _record_login_attempt(db, normalized_email, client_ip, user_agent, success=False, user_id=user.id, failure_reason="Account locked")
+        except Exception:
+            pass
         finally:
             db.close()
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account has been locked. Please contact support.")
@@ -284,7 +293,16 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
     db = SessionLocal(bind=get_engine())
     try:
         _record_login_attempt(db, normalized_email, client_ip, user_agent, success=True, user_id=user.id)
+    except Exception:
+        pass
+    finally:
+        db.close()
+
+    db = SessionLocal(bind=get_engine())
+    try:
         _create_notification(db, user.id, "SECURITY", "New login detected", f"Login from {client_ip} at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}.")
+    except Exception:
+        pass
     finally:
         db.close()
 
