@@ -7,7 +7,7 @@ from sqlalchemy import text
 from app.core.config import get_settings
 from app.core.database import get_engine
 from app.models import models
-from app.api.routes import auth, accounts, supabase, admin, beneficiaries, scheduled_transfers, disputes
+from app.api.routes import auth, accounts, supabase, admin, beneficiaries, scheduled_transfers, disputes, goals, billers, round_up
 
 # ── Structured logging ────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -105,6 +105,9 @@ app.include_router(admin.router)
 app.include_router(beneficiaries.router)
 app.include_router(scheduled_transfers.router)
 app.include_router(disputes.router)
+app.include_router(goals.router)
+app.include_router(billers.router)
+app.include_router(round_up.router)
 
 
 @app.get("/", tags=["System"])

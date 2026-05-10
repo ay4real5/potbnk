@@ -18,6 +18,8 @@ const NAV_ITEMS = [
   { label: 'Transfer',     href: '/transfer' },
   { label: 'Deposit',      href: '/deposit' },
   { label: 'Withdraw',     href: '/withdraw' },
+  { label: 'Bill Pay',     href: '/bill-pay' },
+  { label: 'Goals',        href: '/goals' },
   { label: 'Transactions', href: '/transactions' },
   { label: 'Settings',     href: '/settings' },
 ];

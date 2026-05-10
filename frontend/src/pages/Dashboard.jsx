@@ -606,6 +606,19 @@ export default function Dashboard() {
     .filter((t) => t.type === 'WITHDRAWAL')
     .sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount))[0];
 
+  // Category spending breakdown
+  const categoryTotals = monthTx
+    .filter((t) => t.type !== 'DEPOSIT')
+    .reduce((acc, t) => {
+      const cat = t.category || 'Other';
+      acc[cat] = (acc[cat] || 0) + parseFloat(t.amount);
+      return acc;
+    }, {});
+  const categoryEntries = Object.entries(categoryTotals)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+  const maxCategorySpend = categoryEntries.length > 0 ? categoryEntries[0][1] : 0;
+
   const handleOpenAccount = async () => {
     setOpenAcctError('');
     setOpenAcctSuccess('');
@@ -942,6 +955,25 @@ export default function Dashboard() {
                       <span className="text-xs font-bold text-red-500 tabular-nums">
                         -{asMoney(parseFloat(largestOut.amount))}
                       </span>
+                    </div>
+                  )}
+
+                  {categoryEntries.length > 0 && (
+                    <div className="pt-3 border-t border-slate-50 dark:border-white/5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Top Spending Categories</p>
+                      <div className="space-y-2">
+                        {categoryEntries.map(([cat, amt]) => (
+                          <div key={cat}>
+                            <div className="flex justify-between text-[10px] mb-0.5">
+                              <span className="text-slate-600 dark:text-white/60 font-medium">{cat}</span>
+                              <span className="text-slate-500 dark:text-white/40 tabular-nums">${amt.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden">
+                              <div className="h-full rounded-full bg-[#063b36] dark:bg-[#7CFC00]" style={{ width: `${maxCategorySpend > 0 ? Math.round((amt / maxCategorySpend) * 100) : 0}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

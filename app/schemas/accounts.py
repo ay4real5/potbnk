@@ -112,6 +112,70 @@ class WithdrawRequest(BaseModel):
     amount: Decimal
     description: Optional[str] = "Withdrawal"
 
+class GoalCreate(BaseModel):
+    name: str
+    target_amount: Decimal
+    icon: Optional[str] = None
+    color: Optional[str] = None
+
+class GoalResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    target_amount: Decimal
+    current_amount: Decimal
+    icon: Optional[str]
+    color: Optional[str]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class BillerCreate(BaseModel):
+    name: str
+    category: str
+    account_number: Optional[str] = None
+    nickname: Optional[str] = None
+
+class BillerResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    category: str
+    account_number: Optional[str]
+    nickname: Optional[str]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class BillPaymentCreate(BaseModel):
+    biller_id: uuid.UUID
+    account_id: uuid.UUID
+    amount: Decimal
+    scheduled_for: Optional[datetime] = None
+
+class BillPaymentResponse(BaseModel):
+    id: uuid.UUID
+    biller_id: uuid.UUID
+    account_id: uuid.UUID
+    amount: Decimal
+    status: str
+    scheduled_for: Optional[datetime]
+    paid_at: Optional[datetime]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class RoundUpRuleCreate(BaseModel):
+    source_account_id: uuid.UUID
+    goal_id: uuid.UUID
+
+class RoundUpRuleResponse(BaseModel):
+    id: uuid.UUID
+    source_account_id: uuid.UUID
+    goal_id: uuid.UUID
+    enabled: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
 class OpenAccountRequest(BaseModel):
     account_type: str
 

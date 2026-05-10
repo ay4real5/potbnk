@@ -49,6 +49,7 @@ class Transaction(Base):
 	receiver_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=True, index=True)
 	amount = Column(Numeric(12, 2), nullable=False)
 	type = Column(String(20), nullable=False)
+	category = Column(String(40), nullable=True, index=True)
 	status = Column(String(20), default="POSTED", nullable=False, index=True)
 	idempotency_key = Column(String(80), nullable=True, unique=True, index=True)
 	description = Column(Text, nullable=True)
@@ -128,6 +129,56 @@ class Dispute(Base):
 	transaction_id = Column(UUID(as_uuid=True), ForeignKey("transactions.id"), nullable=False, index=True)
 	reason = Column(Text, nullable=False)
 	status = Column(String(20), default="OPEN", nullable=False, index=True)  # OPEN, REVIEWING, RESOLVED, REJECTED
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class Goal(Base):
+	__tablename__ = "goals"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+	name = Column(String(80), nullable=False)
+	target_amount = Column(Numeric(12, 2), nullable=False)
+	current_amount = Column(Numeric(12, 2), default=0.00, nullable=False)
+	icon = Column(String(40), nullable=True)
+	color = Column(String(20), nullable=True)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class Biller(Base):
+	__tablename__ = "billers"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+	name = Column(String(120), nullable=False)
+	category = Column(String(40), nullable=False)
+	account_number = Column(String(40), nullable=True)
+	nickname = Column(String(80), nullable=True)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class BillPayment(Base):
+	__tablename__ = "bill_payments"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+	biller_id = Column(UUID(as_uuid=True), ForeignKey("billers.id"), nullable=False, index=True)
+	account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True)
+	amount = Column(Numeric(12, 2), nullable=False)
+	status = Column(String(20), default="SCHEDULED", nullable=False)
+	scheduled_for = Column(DateTime(timezone=True), nullable=True)
+	paid_at = Column(DateTime(timezone=True), nullable=True)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class RoundUpRule(Base):
+	__tablename__ = "round_up_rules"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+	source_account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True)
+	goal_id = Column(UUID(as_uuid=True), ForeignKey("goals.id"), nullable=False, index=True)
+	enabled = Column(Boolean, default=True, nullable=False)
 	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
 

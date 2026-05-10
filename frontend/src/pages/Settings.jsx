@@ -65,6 +65,12 @@ export default function Settings() {
   const [totpMsg, setTOTPMsg] = useState('');
   const [totpErr, setTOTPErr] = useState('');
 
+  // Round-up
+  const [roundUpRules, setRoundUpRules] = useState([]);
+  const [goals, setGoals] = useState([]);
+  const [showRoundUp, setShowRoundUp] = useState(false);
+  const [ruForm, setRUForm] = useState({ source_account_id: '', goal_id: '' });
+
   // Nav
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -82,6 +88,12 @@ export default function Settings() {
       api.get('/accounts/').then(({ data }) => setAccounts(data)).catch(() => {});
     }
   }, [activeTab]);
+
+  // Load round-up rules and goals
+  useEffect(() => {
+    api.get('/round-up/').then(({ data }) => setRoundUpRules(data)).catch(() => {});
+    api.get('/goals/').then(({ data }) => setGoals(data)).catch(() => {});
+  }, []);
 
   // Sync dark mode
   useEffect(() => {
@@ -202,6 +214,40 @@ export default function Settings() {
       setTOTPErr(err.response?.data?.detail || 'Invalid code.');
     } finally {
       setTOTPLoading(false);
+    }
+  };
+
+  const handleCreateRoundUp = async () => {
+    if (!ruForm.source_account_id || !ruForm.goal_id) return;
+    try {
+      await api.post('/round-up/', ruForm);
+      const { data } = await api.get('/round-up/');
+      setRoundUpRules(data);
+      setShowRoundUp(false);
+      setRUForm({ source_account_id: '', goal_id: '' });
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to create round-up rule.');
+    }
+  };
+
+  const handleToggleRoundUp = async (ruleId) => {
+    try {
+      await api.patch(`/round-up/${ruleId}`);
+      const { data } = await api.get('/round-up/');
+      setRoundUpRules(data);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to toggle rule.');
+    }
+  };
+
+  const handleDeleteRoundUp = async (ruleId) => {
+    if (!confirm('Remove this round-up rule?')) return;
+    try {
+      await api.delete(`/round-up/${ruleId}`);
+      const { data } = await api.get('/round-up/');
+      setRoundUpRules(data);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to remove rule.');
     }
   };
 
@@ -549,6 +595,58 @@ export default function Settings() {
                       </div>
                     </div>
                   ))
+                )}
+
+                {/* Round-up */}
+                <div className="mt-6 bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="font-bold text-slate-800 dark:text-white text-sm">Round-up Savings</h3>
+                      <p className="text-xs text-slate-400">Round purchases up and save the spare change to a goal.</p>
+                    </div>
+                    <button onClick={() => setShowRoundUp(true)} className="flex items-center gap-1.5 text-xs font-semibold text-bank-teal hover:underline"><Plus size={12} /> Add Rule</button>
+                  </div>
+                  {roundUpRules.length === 0 ? (
+                    <p className="text-xs text-slate-400">No round-up rules yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {roundUpRules.map((r) => {
+                        const acc = accounts.find((a) => a.id === r.source_account_id);
+                        const goal = goals.find((g) => g.id === r.goal_id);
+                        return (
+                          <div key={r.id} className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2.5">
+                            <div className="text-xs">
+                              <p className="font-semibold text-slate-700 dark:text-white/80">{acc ? acc.account_type.replace(/_/g, ' ') : 'Account'} → {goal ? goal.name : 'Goal'}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Toggle checked={r.enabled} onChange={() => handleToggleRoundUp(r.id)} />
+                              <button onClick={() => handleDeleteRoundUp(r.id)} className="text-slate-400 hover:text-red-500"><Trash2 size={14} /></button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {showRoundUp && (
+                  <div className="mt-4 bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-5 shadow-sm">
+                    <p className="font-bold text-slate-700 dark:text-white/80 text-sm mb-3">New Round-up Rule</p>
+                    <div className="space-y-3">
+                      <select value={ruForm.source_account_id} onChange={(e) => setRUForm((f) => ({ ...f, source_account_id: e.target.value }))} className="w-full border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#063b36]">
+                        <option value="">Select source account</option>
+                        {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_type.replace(/_/g, ' ')} ••••{a.account_number.slice(-4)}</option>)}
+                      </select>
+                      <select value={ruForm.goal_id} onChange={(e) => setRUForm((f) => ({ ...f, goal_id: e.target.value }))} className="w-full border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#063b36]">
+                        <option value="">Select goal</option>
+                        {goals.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                      </select>
+                      <div className="flex gap-2">
+                        <button onClick={() => setShowRoundUp(false)} className="flex-1 rounded-xl border border-slate-200 py-2.5 font-semibold text-slate-600 dark:border-white/10 dark:text-white/70 text-sm">Cancel</button>
+                        <button onClick={handleCreateRoundUp} className="flex-1 rounded-xl bg-[#063b36] py-2.5 font-semibold text-white hover:bg-[#041f1c] text-sm">Create Rule</button>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             )}

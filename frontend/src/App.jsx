@@ -9,6 +9,8 @@ import Withdraw from './pages/Withdraw'
 import Deposit from './pages/Deposit'
 import Settings from './pages/Settings'
 import LoginActivity from './pages/LoginActivity'
+import Goals from './pages/Goals'
+import BillPay from './pages/BillPay'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import NotFound from './pages/NotFound'
@@ -111,6 +113,14 @@ export default function App() {
       <Route
         path="/login-activity"
         element={<ProtectedRoute><LoginActivity /></ProtectedRoute>}
+      />
+      <Route
+        path="/goals"
+        element={<ProtectedRoute><Goals /></ProtectedRoute>}
+      />
+      <Route
+        path="/bill-pay"
+        element={<ProtectedRoute><BillPay /></ProtectedRoute>}
       />
       <Route
         path="/admin"

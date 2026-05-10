@@ -1,8 +1,74 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from app.models.models import Account, Transaction
+from app.models.models import Account, Transaction, RoundUpRule, Goal
 from decimal import Decimal
 import uuid
+import math
+
+
+def _categorize(description: str, tx_type: str) -> str | None:
+    d = (description or "").lower()
+    if tx_type == "DEPOSIT":
+        return "Income"
+    if tx_type == "WITHDRAWAL":
+        return "Cash Withdrawal"
+    if tx_type == "EXTERNAL_TRANSFER":
+        return "External Transfer"
+    if tx_type == "TRANSFER":
+        if "savings" in d or "checking" in d:
+            return "Internal Transfer"
+        return "Transfer"
+    if "grocery" in d or "supermarket" in d or "walmart" in d or "kroger" in d:
+        return "Groceries"
+    if "restaurant" in d or "dining" in d or "uber eats" in d or "doordash" in d:
+        return "Dining"
+    if "gas" in d or "shell" in d or "exxon" in d or "bp" in d:
+        return "Transportation"
+    if "electric" in d or "water" in d or "internet" in d or "utility" in d or "phone" in d:
+        return "Utilities"
+    if "rent" in d or "mortgage" in d or "apartment" in d:
+        return "Housing"
+    if "insurance" in d or "healthcare" in d or "hospital" in d or "pharmacy" in d:
+        return "Health"
+    if "netflix" in d or "spotify" in d or "subscription" in d or "membership" in d:
+        return "Subscriptions"
+    if "amazon" in d or "shopping" in d or "retail" in d:
+        return "Shopping"
+    if "salary" in d or "payroll" in d or "direct deposit" in d:
+        return "Income"
+    return "Other"
+
+
+def _apply_round_up(db: Session, user_id, source_account_id: uuid.UUID, amount: Decimal):
+    rule = db.query(RoundUpRule).filter(
+        RoundUpRule.user_id == user_id,
+        RoundUpRule.source_account_id == source_account_id,
+        RoundUpRule.enabled == True,
+    ).first()
+    if not rule:
+        return None
+    rounded = Decimal(math.ceil(float(amount)))
+    spare = rounded - amount
+    if spare <= 0:
+        return None
+    source = db.query(Account).filter(Account.id == source_account_id).with_for_update().first()
+    goal = db.query(Goal).filter(Goal.id == rule.goal_id).with_for_update().first()
+    if not source or not goal or source.balance < spare:
+        return None
+    source.balance -= spare
+    goal.current_amount += spare
+    tx = Transaction(
+        id=uuid.uuid4(),
+        sender_id=source_account_id,
+        receiver_id=None,
+        amount=spare,
+        description=f"Round-up to {goal.name}",
+        type="TRANSFER",
+        category="Savings",
+    )
+    db.add(tx)
+    return tx
+
 
 def perform_deposit(db: Session, account_id: uuid.UUID, amount: Decimal, description: str = "Deposit"):
     if amount <= 0:
@@ -22,7 +88,8 @@ def perform_deposit(db: Session, account_id: uuid.UUID, amount: Decimal, descrip
         sender_id=None,
         amount=amount,
         description=description,
-        type="DEPOSIT"
+        type="DEPOSIT",
+        category=_categorize(description, "DEPOSIT"),
     )
     db.add(tx)
     try:
@@ -70,15 +137,18 @@ def perform_transfer(
         description=description,
         type="TRANSFER",
         idempotency_key=idempotency_key,
+        category=_categorize(description, "TRANSFER"),
     )
 
     try:
         db.add(tx)
+        # Round-up on debit side
+        ru_tx = _apply_round_up(db, sender.user_id, sender_id, amount)
         db.commit()
         db.refresh(tx)
         return tx
     except SQLAlchemyError:
-        db.rollback()  # If anything fails, reverse everything
+        db.rollback()
         raise ValueError("Transaction failed. Please try again.")
 
 def perform_external_transfer(
@@ -115,11 +185,13 @@ def perform_external_transfer(
         receiver_id=None,
         amount=amount,
         description=tx_description,
-        type="EXTERNAL_TRANSFER"
+        type="EXTERNAL_TRANSFER",
+        category=_categorize(tx_description, "EXTERNAL_TRANSFER"),
     )
 
     try:
         db.add(tx)
+        ru_tx = _apply_round_up(db, sender.user_id, sender_id, amount)
         db.commit()
         db.refresh(tx)
         return tx
@@ -151,10 +223,12 @@ def perform_withdrawal(db: Session, account_id: uuid.UUID, amount: Decimal, desc
         receiver_id=None,
         amount=amount,
         description=description,
-        type="WITHDRAWAL"
+        type="WITHDRAWAL",
+        category=_categorize(description, "WITHDRAWAL"),
     )
     try:
         db.add(tx)
+        ru_tx = _apply_round_up(db, account.user_id, account_id, amount)
         db.commit()
         db.refresh(tx)
         return tx
