@@ -184,18 +184,18 @@ export default function Landing() {
         {/* Content — vertically & horizontally centered */}
         <div className="relative z-10 flex flex-col items-center text-center gap-3 px-4 pt-20 sm:pt-24 md:pt-28">
           {/* Curved WELCOME wordmark */}
-          <div className="w-[min(90vw,900px)] max-w-[900px]">
-            <svg viewBox="0 0 900 220" className="w-full h-auto" aria-hidden="true">
+          <div className="w-[min(92vw,960px)] max-w-[960px]">
+            <svg viewBox="0 0 960 260" className="w-full h-auto" aria-hidden="true">
               <defs>
-                <path id="welcome-arc" d="M40 170 Q450 40 860 170" />
+                <path id="welcome-arc" d="M60 200 Q480 100 900 200" />
               </defs>
               <text
                 fill="#8fdb46"
-                fontSize="130"
+                fontSize="124"
                 fontWeight="800"
                 fontStyle="italic"
-                letterSpacing="10"
-                style={{ filter: 'drop-shadow(0 6px 20px rgba(143,219,70,0.45))' }}
+                letterSpacing="16"
+                style={{ filter: 'drop-shadow(0 6px 24px rgba(143,219,70,0.5))' }}
               >
                 <textPath href="#welcome-arc" startOffset="50%" textAnchor="middle">
                   WELCOME
