@@ -187,3 +187,70 @@ class OpenAccountRequest(BaseModel):
         if normalized not in allowed:
             raise ValueError(f"account_type must be one of: {', '.join(sorted(allowed))}")
         return normalized
+
+class CardResponse(BaseModel):
+    id: uuid.UUID
+    account_id: uuid.UUID
+    last4: str
+    status: str
+    daily_limit: Decimal
+    expiry_month: int
+    expiry_year: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class CardUpdate(BaseModel):
+    status: Optional[str] = None
+    daily_limit: Optional[Decimal] = None
+
+class StatementResponse(BaseModel):
+    id: uuid.UUID
+    account_id: uuid.UUID
+    month: int
+    year: int
+    url: Optional[str]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class BudgetAlertCreate(BaseModel):
+    category: str
+    limit_amount: Decimal
+
+class BudgetAlertResponse(BaseModel):
+    id: uuid.UUID
+    category: str
+    limit_amount: Decimal
+    enabled: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class ReferralCreate(BaseModel):
+    referred_email: str
+
+class ReferralResponse(BaseModel):
+    id: uuid.UUID
+    referred_email: str
+    status: str
+    bonus_amount: Decimal
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class CheckDepositCreate(BaseModel):
+    account_id: uuid.UUID
+    amount: Decimal
+    memo: Optional[str] = None
+
+class CheckDepositResponse(BaseModel):
+    id: uuid.UUID
+    account_id: uuid.UUID
+    amount: Decimal
+    memo: Optional[str]
+    hold_until: Optional[datetime]
+    status: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

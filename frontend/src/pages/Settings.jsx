@@ -71,6 +71,16 @@ export default function Settings() {
   const [showRoundUp, setShowRoundUp] = useState(false);
   const [ruForm, setRUForm] = useState({ source_account_id: '', goal_id: '' });
 
+  // Budget alerts
+  const [budgetAlerts, setBudgetAlerts] = useState([]);
+  const [showBudgetForm, setShowBudgetForm] = useState(false);
+  const [budgetForm, setBudgetForm] = useState({ category: 'Other', limit_amount: '' });
+
+  // Referrals
+  const [referrals, setReferrals] = useState([]);
+  const [refEmail, setRefEmail] = useState('');
+  const [refLoading, setRefLoading] = useState(false);
+
   // Nav
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -93,6 +103,8 @@ export default function Settings() {
   useEffect(() => {
     api.get('/round-up/').then(({ data }) => setRoundUpRules(data)).catch(() => {});
     api.get('/goals/').then(({ data }) => setGoals(data)).catch(() => {});
+    api.get('/budget-alerts/').then(({ data }) => setBudgetAlerts(data)).catch(() => {});
+    api.get('/referrals/').then(({ data }) => setReferrals(data)).catch(() => {});
   }, []);
 
   // Sync dark mode
@@ -248,6 +260,55 @@ export default function Settings() {
       setRoundUpRules(data);
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to remove rule.');
+    }
+  };
+
+  const handleCreateBudget = async () => {
+    if (!budgetForm.limit_amount || Number(budgetForm.limit_amount) <= 0) return;
+    try {
+      await api.post('/budget-alerts/', { category: budgetForm.category, limit_amount: Number(budgetForm.limit_amount) });
+      const { data } = await api.get('/budget-alerts/');
+      setBudgetAlerts(data);
+      setShowBudgetForm(false);
+      setBudgetForm({ category: 'Other', limit_amount: '' });
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to create alert.');
+    }
+  };
+
+  const handleToggleBudget = async (id) => {
+    try {
+      await api.patch(`/budget-alerts/${id}`);
+      const { data } = await api.get('/budget-alerts/');
+      setBudgetAlerts(data);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to toggle alert.');
+    }
+  };
+
+  const handleDeleteBudget = async (id) => {
+    if (!confirm('Remove this budget alert?')) return;
+    try {
+      await api.delete(`/budget-alerts/${id}`);
+      const { data } = await api.get('/budget-alerts/');
+      setBudgetAlerts(data);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to remove alert.');
+    }
+  };
+
+  const handleInvite = async () => {
+    if (!refEmail.includes('@')) { alert('Enter a valid email.'); return; }
+    setRefLoading(true);
+    try {
+      await api.post('/referrals/', { referred_email: refEmail.trim() });
+      setRefEmail('');
+      const { data } = await api.get('/referrals/');
+      setReferrals(data);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to send invite.');
+    } finally {
+      setRefLoading(false);
     }
   };
 
@@ -648,6 +709,65 @@ export default function Settings() {
                     </div>
                   </div>
                 )}
+
+                {/* Budget Alerts */}
+                <div className="mt-6 bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="font-bold text-slate-800 dark:text-white text-sm">Budget Alerts</h3>
+                      <p className="text-xs text-slate-400">Get notified when spending exceeds a limit.</p>
+                    </div>
+                    <button onClick={() => setShowBudgetForm(true)} className="flex items-center gap-1.5 text-xs font-semibold text-bank-teal hover:underline"><Plus size={12} /> Add Alert</button>
+                  </div>
+                  {budgetAlerts.length === 0 ? (
+                    <p className="text-xs text-slate-400">No budget alerts set.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {budgetAlerts.map((b) => (
+                        <div key={b.id} className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2.5">
+                          <div className="text-xs">
+                            <p className="font-semibold text-slate-700 dark:text-white/80">{b.category}</p>
+                            <p className="text-slate-400">Limit: ${Number(b.limit_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Toggle checked={b.enabled} onChange={() => handleToggleBudget(b.id)} />
+                            <button onClick={() => handleDeleteBudget(b.id)} className="text-slate-400 hover:text-red-500"><Trash2 size={14} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {showBudgetForm && (
+                    <div className="mt-3 flex gap-2">
+                      <select value={budgetForm.category} onChange={(e) => setBudgetForm((f) => ({ ...f, category: e.target.value }))} className="flex-1 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm bg-white dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#063b36]">
+                        {['Groceries','Dining','Transportation','Utilities','Housing','Health','Subscriptions','Shopping','Other'].map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <input type="number" min="1" step="1" value={budgetForm.limit_amount} onChange={(e) => setBudgetForm((f) => ({ ...f, limit_amount: e.target.value }))} placeholder="Limit" className="w-28 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm bg-white dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#063b36]" />
+                      <button onClick={handleCreateBudget} className="bg-[#063b36] text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-[#041f1c]">Add</button>
+                      <button onClick={() => setShowBudgetForm(false)} className="border border-slate-200 text-slate-600 text-xs font-semibold px-3 py-2 rounded-xl dark:border-white/10 dark:text-white/70">Cancel</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Referrals */}
+                <div className="mt-6 bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-5 shadow-sm">
+                  <h3 className="font-bold text-slate-800 dark:text-white text-sm mb-1">Refer Friends</h3>
+                  <p className="text-xs text-slate-400 mb-4">Invite friends and earn a $25 bonus when they join.</p>
+                  <div className="flex gap-2">
+                    <input type="email" value={refEmail} onChange={(e) => setRefEmail(e.target.value)} placeholder="Friend's email" className="flex-1 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#063b36]" />
+                    <button onClick={handleInvite} disabled={refLoading} className="bg-[#063b36] text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-[#041f1c] disabled:opacity-50">{refLoading ? '…' : 'Invite'}</button>
+                  </div>
+                  {referrals.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {referrals.map((r) => (
+                        <div key={r.id} className="flex items-center justify-between text-xs rounded-lg bg-slate-50 dark:bg-white/5 px-3 py-2">
+                          <span className="text-slate-600 dark:text-white/60">{r.referred_email}</span>
+                          <span className={`font-bold ${r.status === 'COMPLETED' ? 'text-emerald-600' : 'text-amber-600'}`}>{r.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

@@ -11,6 +11,9 @@ import Settings from './pages/Settings'
 import LoginActivity from './pages/LoginActivity'
 import Goals from './pages/Goals'
 import BillPay from './pages/BillPay'
+import Cards from './pages/Cards'
+import Statements from './pages/Statements'
+import CheckDeposit from './pages/CheckDeposit'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import NotFound from './pages/NotFound'
@@ -121,6 +124,18 @@ export default function App() {
       <Route
         path="/bill-pay"
         element={<ProtectedRoute><BillPay /></ProtectedRoute>}
+      />
+      <Route
+        path="/cards"
+        element={<ProtectedRoute><Cards /></ProtectedRoute>}
+      />
+      <Route
+        path="/statements"
+        element={<ProtectedRoute><Statements /></ProtectedRoute>}
+      />
+      <Route
+        path="/check-deposit"
+        element={<ProtectedRoute><CheckDeposit /></ProtectedRoute>}
       />
       <Route
         path="/admin"

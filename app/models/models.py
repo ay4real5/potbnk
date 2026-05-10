@@ -182,6 +182,67 @@ class RoundUpRule(Base):
 	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
 
+class Card(Base):
+	__tablename__ = "cards"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+	account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True)
+	last4 = Column(String(4), nullable=False)
+	status = Column(String(20), default="ACTIVE", nullable=False, index=True)  # ACTIVE, FROZEN, LOCKED
+	daily_limit = Column(Numeric(12, 2), default=5000.00, nullable=False)
+	expiry_month = Column(Integer, nullable=False)
+	expiry_year = Column(Integer, nullable=False)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class Statement(Base):
+	__tablename__ = "statements"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+	account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True)
+	month = Column(Integer, nullable=False)
+	year = Column(Integer, nullable=False)
+	url = Column(String(500), nullable=True)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class BudgetAlert(Base):
+	__tablename__ = "budget_alerts"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+	category = Column(String(40), nullable=False, index=True)
+	limit_amount = Column(Numeric(12, 2), nullable=False)
+	enabled = Column(Boolean, default=True, nullable=False)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class Referral(Base):
+	__tablename__ = "referrals"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	referrer_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+	referred_email = Column(String(255), nullable=False, index=True)
+	status = Column(String(20), default="PENDING", nullable=False, index=True)  # PENDING, COMPLETED
+	bonus_amount = Column(Numeric(12, 2), default=25.00, nullable=False)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class CheckDeposit(Base):
+	__tablename__ = "check_deposits"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+	account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True)
+	amount = Column(Numeric(12, 2), nullable=False)
+	memo = Column(Text, nullable=True)
+	hold_until = Column(DateTime(timezone=True), nullable=True)
+	status = Column(String(20), default="PENDING", nullable=False, index=True)  # PENDING, CLEARED
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
 class AdminAuditLog(Base):
 	__tablename__ = "admin_audit_logs"
 
