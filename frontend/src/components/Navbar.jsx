@@ -618,6 +618,45 @@ function LoginDropdown({ onClose }) {
 }
 
 // ── Main Navbar ───────────────────────────────────────────────────────────────
+// ── Business dropdown panel (desktop) ─────────────────────────────────────────
+function BusinessDropdown({ onClose }) {
+  return (
+    <div
+      className="absolute top-full left-0 right-0 z-50 flex justify-center px-6 pt-2 pb-6"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-[960px]">
+        <div className="bg-[#163d2e] rounded-2xl p-5 shadow-2xl">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {BUSINESS_CARDS.map((card) => (
+              <div
+                key={card.title}
+                className="bg-[#0d3426] rounded-xl p-5 flex flex-col gap-3 border border-white/5"
+              >
+                <p className="text-[#8fdb46] text-[11px] font-bold uppercase tracking-widest">
+                  {card.tag}
+                </p>
+                <h3 className="text-white text-2xl font-serif leading-snug">
+                  {card.title}
+                </h3>
+                <div className="mt-auto pt-2">
+                  <Link
+                    to={card.href}
+                    onClick={onClose}
+                    className="inline-flex items-center justify-center rounded-full border-2 border-white/75 text-white text-sm font-bold px-6 py-2.5 hover:bg-white/10 transition-colors"
+                  >
+                    Continue
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Navbar({ overlay = false }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -627,7 +666,9 @@ export default function Navbar({ overlay = false }) {
   const [mobileCategory, setMobileCategory] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [bizDropdownOpen, setBizDropdownOpen] = useState(false);
   const loginRef = useRef(null);
+  const bizRef = useRef(null);
   const closeTimer = useRef(null);
   const overlayGuest = overlay && !user;
 
@@ -638,16 +679,19 @@ export default function Navbar({ overlay = false }) {
 
   const handleLogout = () => { logout(); navigate('/'); };
 
-  // Close login dropdown on outside click
+  // Close login / business dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
       if (loginOpen && loginRef.current && !loginRef.current.contains(e.target)) {
         setLoginOpen(false);
       }
+      if (bizDropdownOpen && bizRef.current && !bizRef.current.contains(e.target)) {
+        setBizDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [loginOpen]);
+  }, [loginOpen, bizDropdownOpen]);
 
   const openCat    = (cat) => { clearTimeout(closeTimer.current); setOpenMenu(cat); };
   const startClose = ()    => { closeTimer.current = setTimeout(() => setOpenMenu(null), 130); };
@@ -708,11 +752,18 @@ export default function Navbar({ overlay = false }) {
 
           {/* Center – Personal / Business (guest) OR app links (logged in) */}
           {!user ? (
-            <div className="hidden md:flex flex-1 justify-center items-stretch self-stretch">
+            <div className="hidden md:flex flex-1 justify-center items-stretch self-stretch relative" ref={bizRef}>
               {['Personal', 'Business'].map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => {
+                    setActiveTab(tab);
+                    if (tab === 'Business') {
+                      setBizDropdownOpen((v) => !v);
+                    } else {
+                      setBizDropdownOpen(false);
+                    }
+                  }}
                   className={`px-6 text-sm font-semibold border-b-2 transition-colors ${
                     activeTab === tab
                       ? 'text-white border-[#4ade80]'
@@ -722,6 +773,7 @@ export default function Navbar({ overlay = false }) {
                   {tab}
                 </button>
               ))}
+              {bizDropdownOpen && <BusinessDropdown onClose={() => setBizDropdownOpen(false)} />}
             </div>
           ) : (
             <div className="flex-1 flex justify-center items-center gap-6">
