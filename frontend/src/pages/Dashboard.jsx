@@ -4,8 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import BankShell from '../components/BankShell';
 import {
-  ArrowLeftRight, MinusCircle, PlusCircle, Settings, Plus, X,
-  ShieldCheck, Send, Sparkles, TrendingUp, TriangleAlert,
+  ArrowLeftRight, MinusCircle, PlusCircle, Plus, X,
+  ShieldCheck, Send, Sparkles, TrendingUp, TriangleAlert, Target,
+  ArrowUpRight, ArrowDownRight, Wallet,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -734,7 +735,7 @@ export default function Dashboard() {
             { label: 'Transfer', onClick: () => setShowTransferModal(true), bg: 'bg-emerald-50 dark:bg-emerald-900/20', fg: 'text-emerald-700 dark:text-emerald-400', icon: <ArrowLeftRight size={16} /> },
             { label: 'Deposit',  onClick: () => navigate('/deposit'),       bg: 'bg-sky-50 dark:bg-sky-900/20',     fg: 'text-sky-700 dark:text-sky-400',     icon: <PlusCircle size={16} />    },
             { label: 'Withdraw', onClick: () => navigate('/withdraw'),      bg: 'bg-rose-50 dark:bg-rose-900/20',   fg: 'text-rose-600 dark:text-rose-400',   icon: <MinusCircle size={16} />   },
-            { label: 'Settings', onClick: () => navigate('/settings'),      bg: 'bg-violet-50 dark:bg-violet-900/20', fg: 'text-violet-600 dark:text-violet-400', icon: <Settings size={16} />  },
+            { label: 'Goals',    onClick: () => navigate('/goals'),          bg: 'bg-violet-50 dark:bg-violet-900/20', fg: 'text-violet-600 dark:text-violet-400', icon: <Target size={16} />  },
           ].map(({ label, onClick, bg, fg, icon }) => (
             <button
               key={label}
@@ -749,8 +750,8 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* ── 3-column grid ─────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-5">
+        {/* ── 2-column grid: Accounts + Summary ─────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
 
           {/* Col 1: My Accounts */}
           <div>
@@ -821,55 +822,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Col 2: Recent Activity */}
-          <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50 dark:border-white/5">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-white/80 font-display">Recent Activity</h3>
-              <Link to="/transactions" className="text-[11px] font-semibold text-[#16a34a] hover:text-[#15803d] transition-colors">
-                View all →
-              </Link>
-            </div>
-            {recentTx.length === 0 ? (
-              <div className="py-14 text-center">
-                <p className="text-slate-400 text-sm">No transactions yet.</p>
-              </div>
-            ) : (
-              <ul className="px-1">
-                {recentTx.map((tx) => {
-                  const isDeposit    = tx.type === 'DEPOSIT';
-                  const isWithdrawal = tx.type === 'WITHDRAWAL';
-                  const sign         = typeSign(tx.type, myAccountIds, tx);
-                  const amountCls    = isDeposit ? 'text-emerald-600' : tx.type === 'TRANSFER' ? 'text-sky-600' : 'text-slate-800 dark:text-white/80';
-                  const iconBg       = isDeposit
-                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30'
-                    : isWithdrawal
-                    ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30'
-                    : 'bg-sky-50 text-sky-600 dark:bg-sky-900/30';
-                  const TxIcon = isDeposit ? PlusCircle : isWithdrawal ? MinusCircle : ArrowLeftRight;
-                  const txDate = new Date(tx.created_at);
-                  return (
-                    <li key={tx.id} className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-b border-slate-50 dark:border-white/5 last:border-0">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${iconBg}`}>
-                        <TxIcon size={13} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-slate-700 dark:text-white/80 truncate">{tx.description || tx.type}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
-                          {txDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })},{' '}
-                          {txDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                        </p>
-                      </div>
-                      <p className={`text-xs font-bold tabular-nums shrink-0 ${amountCls}`}>
-                        {sign}${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                      </p>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-
-          {/* Col 3: Summary + Security + Insights */}
+          {/* Col 2: Summary + Security + Insights */}
           <div className="flex flex-col gap-4">
 
             <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-5">
@@ -979,6 +932,104 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* ── Recent Transactions Table ─────────────────────────────────── */}
+        <div className="mt-5 premium-enter premium-enter-delay-3">
+          <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50 dark:border-white/5">
+              <div className="flex items-center gap-2">
+                <Wallet size={16} className="text-slate-400" />
+                <h3 className="text-sm font-semibold text-slate-800 dark:text-white/80 font-display">Recent Transactions</h3>
+              </div>
+              <Link to="/transactions" className="text-[11px] font-semibold text-[#16a34a] hover:text-[#15803d] transition-colors">
+                View all →
+              </Link>
+            </div>
+            {recentTx.length === 0 ? (
+              <div className="py-14 text-center">
+                <p className="text-slate-400 text-sm">No transactions yet.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-slate-50 dark:border-white/5">
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Transaction</th>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 hidden sm:table-cell">Category</th>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Date</th>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-right">Amount</th>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-center hidden md:table-cell">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentTx.map((tx) => {
+                      const isDeposit = tx.type === 'DEPOSIT';
+                      const isWithdrawal = tx.type === 'WITHDRAWAL';
+                      const isTransfer = tx.type === 'TRANSFER';
+                      const sign = typeSign(tx.type, myAccountIds, tx);
+                      const amountCls = isDeposit
+                        ? 'text-emerald-600'
+                        : isTransfer
+                        ? 'text-sky-600'
+                        : 'text-slate-800 dark:text-white/80';
+                      const txDate = new Date(tx.created_at);
+                      const TxIcon = isDeposit
+                        ? ArrowUpRight
+                        : isWithdrawal
+                        ? ArrowDownRight
+                        : ArrowLeftRight;
+                      const iconBg = isDeposit
+                        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30'
+                        : isWithdrawal
+                        ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30'
+                        : 'bg-sky-50 text-sky-600 dark:bg-sky-900/30';
+                      return (
+                        <tr
+                          key={tx.id}
+                          className="border-b border-slate-50 dark:border-white/5 last:border-0 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors"
+                        >
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${iconBg}`}>
+                                <TxIcon size={14} />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold text-slate-700 dark:text-white/80 truncate">
+                                  {tx.description || tx.type}
+                                </p>
+                                <p className="text-[10px] text-slate-400">{tx.type.replace(/_/g, ' ')}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3 hidden sm:table-cell">
+                            <span className="text-[11px] text-slate-500 dark:text-white/50">
+                              {tx.category || 'Other'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3">
+                            <span className="text-[11px] text-slate-500 dark:text-white/50">
+                              {txDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            <span className={`text-xs font-bold tabular-nums ${amountCls}`}>
+                              {sign}${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 text-center hidden md:table-cell">
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                              {tx.status || 'Completed'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </div>

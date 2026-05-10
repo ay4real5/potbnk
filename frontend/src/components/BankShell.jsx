@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Bell, Menu, X, Moon, Sun, User, Settings, Shield, LogOut } from 'lucide-react';
+import { Bell, Menu, X, Moon, Sun, User, Settings, Shield, LogOut, ChevronDown } from 'lucide-react';
 import api from '../api/client';
 
 function timeAgo(dateStr) {
@@ -14,19 +14,28 @@ function timeAgo(dateStr) {
 }
 
 const NAV_ITEMS = [
-  { label: 'Dashboard',    href: '/dashboard' },
-  { label: 'Transfer',     href: '/transfer' },
-  { label: 'Deposit',      href: '/deposit' },
-  { label: 'Withdraw',     href: '/withdraw' },
-  { label: 'Bill Pay',     href: '/bill-pay' },
-  { label: 'Goals',        href: '/goals' },
-  { label: 'Cards',        href: '/cards' },
-  { label: 'Statements',   href: '/statements' },
-  { label: 'Check Deposit',href: '/check-deposit' },
-  { label: 'Loans',        href: '/loans' },
-  { label: 'Wire Transfer',href: '/wire-transfer' },
+  { label: 'Dashboard', href: '/dashboard' },
+  {
+    label: 'Move Money',
+    children: [
+      { label: 'Transfer', href: '/transfer' },
+      { label: 'Deposit', href: '/deposit' },
+      { label: 'Withdraw', href: '/withdraw' },
+      { label: 'Bill Pay', href: '/bill-pay' },
+      { label: 'Wire Transfer', href: '/wire-transfer' },
+    ],
+  },
+  {
+    label: 'Banking',
+    children: [
+      { label: 'Cards', href: '/cards' },
+      { label: 'Statements', href: '/statements' },
+      { label: 'Check Deposit', href: '/check-deposit' },
+      { label: 'Loans', href: '/loans' },
+    ],
+  },
+  { label: 'Goals', href: '/goals' },
   { label: 'Transactions', href: '/transactions' },
-  { label: 'Settings',     href: '/settings' },
 ];
 
 function LogoMark() {
@@ -49,6 +58,7 @@ export default function BankShell({ children, title }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const bellRef = useRef(null);
   const profileRef = useRef(null);
@@ -128,21 +138,62 @@ export default function BankShell({ children, title }) {
             <span className="text-white font-bold text-xl tracking-tight font-display">Hunch.</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
-            {NAV_ITEMS.map(({ label, href }) => {
-              const active =
-                location.pathname === href ||
-                (href === '/transactions' && location.pathname.startsWith('/transactions'));
+          <nav className="hidden md:flex items-center gap-0.5">
+            {NAV_ITEMS.map((item) => {
+              if (item.href) {
+                const active = location.pathname === item.href ||
+                  (item.href === '/transactions' && location.pathname.startsWith('/transactions'));
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className={`text-sm font-semibold px-3 py-1.5 rounded-full transition-all ${
+                      active ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              }
+              // Dropdown
+              const isOpen = openDropdown === item.label;
+              const hasActiveChild = item.children.some((c) => location.pathname === c.href || location.pathname.startsWith(c.href));
               return (
-                <Link
-                  key={href}
-                  to={href}
-                  className={`text-sm font-semibold px-3 py-1 rounded-full transition-all ${
-                    active ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'
-                  }`}
+                <div
+                  key={item.label}
+                  className="relative"
+                  onMouseEnter={() => setOpenDropdown(item.label)}
+                  onMouseLeave={() => setOpenDropdown(null)}
                 >
-                  {label}
-                </Link>
+                  <button
+                    className={`flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-full transition-all ${
+                      hasActiveChild ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {item.label}
+                    <ChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {isOpen && (
+                    <div className="absolute top-full left-0 pt-1 z-50">
+                      <div className="bg-white dark:bg-[#111a18] rounded-xl shadow-xl border border-slate-100 dark:border-white/10 py-1.5 min-w-[180px] overflow-hidden">
+                        {item.children.map((child) => (
+                          <Link
+                            key={child.href}
+                            to={child.href}
+                            onClick={() => setOpenDropdown(null)}
+                            className={`block px-4 py-2 text-sm transition-colors ${
+                              location.pathname === child.href
+                                ? 'bg-slate-50 dark:bg-white/5 text-[#063b36] dark:text-[#7CFC00] font-semibold'
+                                : 'text-slate-600 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/5'
+                            }`}
+                          >
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
@@ -260,22 +311,45 @@ export default function BankShell({ children, title }) {
         </div>
 
         {mobileOpen && (
-          <nav className="md:hidden mt-3 flex flex-col gap-1 border-t border-white/10 pt-3 pb-2">
-            {NAV_ITEMS.map(({ label, href }) => {
-              const active =
-                location.pathname === href ||
-                (href === '/transactions' && location.pathname.startsWith('/transactions'));
+          <nav className="md:hidden mt-3 flex flex-col gap-0.5 border-t border-white/10 pt-3 pb-2">
+            {NAV_ITEMS.map((item) => {
+              if (item.href) {
+                const active = location.pathname === item.href ||
+                  (item.href === '/transactions' && location.pathname.startsWith('/transactions'));
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`text-sm font-medium px-4 py-2 rounded-lg transition-all ${
+                      active ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              }
               return (
-                <Link
-                  key={href}
-                  to={href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`text-sm font-medium px-4 py-2 rounded-lg transition-all ${
-                    active ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {label}
-                </Link>
+                <div key={item.label} className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-white/30 px-4 py-1.5">
+                    {item.label}
+                  </span>
+                  {item.children.map((child) => {
+                    const active = location.pathname === child.href;
+                    return (
+                      <Link
+                        key={child.href}
+                        to={child.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`text-sm font-medium px-6 py-2 rounded-lg transition-all ${
+                          active ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        {child.label}
+                      </Link>
+                    );
+                  })}
+                </div>
               );
             })}
           </nav>
