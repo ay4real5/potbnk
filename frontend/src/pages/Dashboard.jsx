@@ -730,12 +730,13 @@ export default function Dashboard() {
         </div>
 
         {/* ── Quick actions ─────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4 sm:mt-5 premium-enter premium-enter-delay-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 mt-4 sm:mt-5 premium-enter premium-enter-delay-3">
           {[
             { label: 'Transfer', onClick: () => setShowTransferModal(true), bg: 'bg-emerald-50 dark:bg-emerald-900/20', fg: 'text-emerald-700 dark:text-emerald-400', icon: <ArrowLeftRight size={16} /> },
+            { label: 'Zelle',    onClick: () => navigate('/zelle'),         bg: 'bg-violet-50 dark:bg-violet-900/20', fg: 'text-violet-600 dark:text-violet-400', icon: <Send size={16} />    },
             { label: 'Deposit',  onClick: () => navigate('/deposit'),       bg: 'bg-sky-50 dark:bg-sky-900/20',     fg: 'text-sky-700 dark:text-sky-400',     icon: <PlusCircle size={16} />    },
             { label: 'Withdraw', onClick: () => navigate('/withdraw'),      bg: 'bg-rose-50 dark:bg-rose-900/20',   fg: 'text-rose-600 dark:text-rose-400',   icon: <MinusCircle size={16} />   },
-            { label: 'Goals',    onClick: () => navigate('/goals'),          bg: 'bg-violet-50 dark:bg-violet-900/20', fg: 'text-violet-600 dark:text-violet-400', icon: <Target size={16} />  },
+            { label: 'Goals',    onClick: () => navigate('/goals'),          bg: 'bg-amber-50 dark:bg-amber-900/20',  fg: 'text-amber-600 dark:text-amber-400', icon: <Target size={16} />  },
           ].map(({ label, onClick, bg, fg, icon }) => (
             <button
               key={label}

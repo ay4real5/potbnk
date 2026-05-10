@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  LogOut, LayoutDashboard, ArrowLeftRight, MinusCircle, Menu, X, Search,
+  LogOut, LayoutDashboard, ArrowLeftRight, Send, MinusCircle, Menu, X, Search,
   PiggyBank, RefreshCw, Handshake, Shield, Home, DollarSign,
   CreditCard, Calculator, TrendingUp, MapPin, Trophy,
   ShieldCheck, Lock, CheckSquare, Info, Monitor, ChevronRight, Map,
@@ -779,6 +779,7 @@ export default function Navbar({ overlay = false }) {
             <div className="flex-1 flex justify-center items-center gap-6">
               <Link to="/dashboard" className="text-white/80 hover:text-white flex items-center gap-1.5 text-sm transition-colors"><LayoutDashboard size={15} /> Dashboard</Link>
               <Link to="/transfer"  className="text-white/80 hover:text-white flex items-center gap-1.5 text-sm transition-colors"><ArrowLeftRight size={15} /> Transfer</Link>
+              <Link to="/zelle"     className="text-white/80 hover:text-white flex items-center gap-1.5 text-sm transition-colors"><Send size={15} /> Zelle</Link>
               <Link to="/withdraw"  className="text-white/80 hover:text-white flex items-center gap-1.5 text-sm transition-colors"><MinusCircle size={15} /> Withdraw</Link>
             </div>
           )}
@@ -883,6 +884,7 @@ export default function Navbar({ overlay = false }) {
             <>
               <Link to="/dashboard" onClick={closeMobileMenu} className="text-white/80 text-sm flex items-center gap-2"><LayoutDashboard size={15}/>Dashboard</Link>
               <Link to="/transfer"  onClick={closeMobileMenu} className="text-white/80 text-sm flex items-center gap-2"><ArrowLeftRight size={15}/>Transfer</Link>
+              <Link to="/zelle"     onClick={closeMobileMenu} className="text-white/80 text-sm flex items-center gap-2"><Send size={15}/>Zelle</Link>
               <Link to="/withdraw"  onClick={closeMobileMenu} className="text-white/80 text-sm flex items-center gap-2"><MinusCircle size={15}/>Withdraw</Link>
               <button onClick={handleLogout} className="text-white/70 text-sm text-left flex items-center gap-2"><LogOut size={15}/>Sign out</button>
             </>

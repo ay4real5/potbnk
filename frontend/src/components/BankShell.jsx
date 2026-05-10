@@ -19,6 +19,7 @@ const NAV_ITEMS = [
     label: 'Move Money',
     children: [
       { label: 'Transfer', href: '/transfer' },
+      { label: 'Zelle', href: '/zelle' },
       { label: 'Deposit', href: '/deposit' },
       { label: 'Withdraw', href: '/withdraw' },
       { label: 'Bill Pay', href: '/bill-pay' },

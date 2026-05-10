@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/client';
 import BankShell from '../components/BankShell';
 import { AlertTriangle, ArrowRight, Building2, CalendarClock, CheckCircle, Clock, CreditCard, Landmark, Repeat, Save, Search, ShieldCheck, Star, Trash2, UserCheck, Users, Zap } from 'lucide-react';
@@ -361,6 +362,23 @@ export default function Transfer() {
                 })}
               </div>
             </section>
+
+            {transferType === 'external' && (
+              <div className="rounded-2xl border border-violet-200/50 bg-gradient-to-r from-violet-50 to-purple-50 p-4 dark:from-violet-900/10 dark:to-purple-900/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-500 text-white">
+                      <Send size={16} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800 dark:text-white">Sending to a person?</p>
+                      <p className="text-[11px] text-slate-500">Zelle delivers in minutes using just an email or phone number.</p>
+                    </div>
+                  </div>
+                  <Link to="/zelle" className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white hover:bg-violet-700 transition">Try Zelle →</Link>
+                </div>
+              </div>
+            )}
 
             <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#111a18]">
               <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Recipient</label>
