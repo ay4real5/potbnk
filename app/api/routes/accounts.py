@@ -33,8 +33,13 @@ def lookup_account(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Look up an account by account number (for transfer recipient resolution)."""
-    account = db.query(Account).filter(Account.account_number == account_number).first()
+    """Look up an account by account number (for transfer recipient resolution).
+    Supports both PRO- prefixed and bare numeric account numbers."""
+    normalized = account_number.strip().upper()
+    # Try exact match first, then fall back to PRO- prefix if input is bare digits
+    account = db.query(Account).filter(Account.account_number == normalized).first()
+    if not account and not normalized.startswith("PRO-"):
+        account = db.query(Account).filter(Account.account_number == f"PRO-{normalized}").first()
     if not account:
         raise HTTPException(status_code=404, detail="No account found with that account number.")
     # Return just enough info for the sender to confirm the right recipient

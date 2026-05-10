@@ -172,6 +172,34 @@ export default function Deposit() {
           </form>
 
           <aside className="lg:col-span-2 space-y-5">
+            <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#111a18]">
+              <div className="mb-3 flex items-center gap-2">
+                <ShieldCheck size={14} className="text-[#063b36] dark:text-[#7CFC00]" />
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Your account details</p>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-white/50 mb-3">Share your account number to receive Hunch-to-Hunch transfers.</p>
+              <div className="space-y-3">
+                {accounts.map((a) => (
+                  <div key={a.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-600 dark:text-white/70">{a.account_type.replace(/_/g, ' ')}</span>
+                      <span className="text-xs font-bold text-[#063b36] dark:text-[#7CFC00]">${formatMoney(a.balance)}</span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="font-mono text-sm font-bold text-slate-800 dark:text-white">{a.account_number}</span>
+                      <button
+                        type="button"
+                        onClick={() => { navigator.clipboard.writeText(a.account_number); toast.success('Account number copied!'); }}
+                        className="text-[10px] font-bold uppercase tracking-wide text-[#063b36] hover:underline dark:text-[#7CFC00]"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
             <section className="rounded-3xl bg-[#063b36] p-6 text-white shadow-sm">
               <p className="text-xs font-bold uppercase tracking-widest text-white/40">Deposit summary</p>
               <div className="mt-6 space-y-4 text-sm">

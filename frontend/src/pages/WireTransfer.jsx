@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api/client';
 import BankShell from '../components/BankShell';
 import { useToast } from '../context/ToastContext';
-import { Globe, Send, Clock, CheckCircle, AlertTriangle, ArrowRight, Plus } from 'lucide-react';
+import { Globe, Send, Clock, CheckCircle, AlertTriangle, ArrowRight, Plus, ShieldCheck } from 'lucide-react';
 
 const WIRE_FEE = 25;
 
@@ -68,6 +68,35 @@ export default function WireTransfers() {
             <Plus size={16} /> Send Wire
           </button>
         </div>
+
+        {accounts.length > 0 && (
+          <div className="rounded-2xl border border-slate-100 dark:border-white/10 bg-white dark:bg-[#111a18] p-5 shadow-sm mb-6">
+            <div className="mb-3 flex items-center gap-2">
+              <ShieldCheck size={14} className="text-[#063b36] dark:text-[#7CFC00]" />
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Your account details</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {accounts.map((a) => (
+                <div key={a.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-600 dark:text-white/70">{a.account_type.replace(/_/g, ' ')}</span>
+                    <span className="text-xs font-bold text-[#063b36] dark:text-[#7CFC00]">${formatMoney(a.balance)}</span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="font-mono text-sm font-bold text-slate-800 dark:text-white">{a.account_number}</span>
+                    <button
+                      type="button"
+                      onClick={() => { navigator.clipboard.writeText(a.account_number); toast.success('Account number copied!'); }}
+                      className="text-[10px] font-bold uppercase tracking-wide text-[#063b36] hover:underline dark:text-[#7CFC00]"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="rounded-2xl border border-slate-100 dark:border-white/10 bg-white dark:bg-[#111a18] p-5 shadow-sm mb-6">
           <div className="flex items-start gap-3">
