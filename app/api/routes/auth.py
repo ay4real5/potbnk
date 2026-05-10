@@ -12,7 +12,7 @@ from app.schemas.auth import (
     UserRegister, TokenResponse, UserProfile, UserUpdate,
     ForgotPasswordRequest, ResetPasswordRequest,
     TOTPSetupResponse, TOTPVerifyRequest, TOTPLoginRequest,
-    LoginActivityResponse, NotificationResponse,
+    StepUpRequest, LoginActivityResponse, NotificationResponse,
 )
 import uuid
 import secrets
