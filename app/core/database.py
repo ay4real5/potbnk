@@ -56,6 +56,7 @@ _LIGHTWEIGHT_MIGRATIONS = [
     "CREATE INDEX IF NOT EXISTS ix_users_totp_enabled ON users (totp_enabled)",
     "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS category VARCHAR(40)",
     "CREATE INDEX IF NOT EXISTS ix_transactions_category ON transactions (category)",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false",
 ]
 
 

@@ -21,6 +21,7 @@ class User(Base):
 	hashed_password = Column(String(255), nullable=False)
 	totp_secret = Column(String(255), nullable=True)
 	totp_enabled = Column(Boolean, default=False, nullable=False)
+	is_admin = Column(Boolean, default=False, nullable=False)
 	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
 	accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")

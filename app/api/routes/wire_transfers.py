@@ -37,40 +37,52 @@ def create_wire(payload: WireTransferCreate, current_user: User = Depends(get_cu
     if account.balance < total:
         raise HTTPException(status_code=400, detail="Insufficient funds including wire fee.")
 
-    # Debit fee + amount from account
-    account.balance -= total
+    try:
+        # Debit fee + amount from account
+        account.balance -= total
 
-    wire = WireTransfer(
-        id=uuid.uuid4(),
-        user_id=current_user.id,
-        sender_account_id=payload.sender_account_id,
-        amount=payload.amount,
-        recipient_name=payload.recipient_name.strip(),
-        recipient_bank=payload.recipient_bank.strip(),
-        recipient_account_number=payload.recipient_account_number.strip(),
-        swift_code=payload.swift_code.strip().upper() if payload.swift_code else None,
-        reference=payload.reference.strip() if payload.reference else None,
-        fee=WIRE_FEE,
-        status="COMPLETED",
-    )
-    db.add(wire)
+        wire = WireTransfer(
+            id=uuid.uuid4(),
+            user_id=current_user.id,
+            sender_account_id=payload.sender_account_id,
+            amount=payload.amount,
+            recipient_name=payload.recipient_name.strip(),
+            recipient_bank=payload.recipient_bank.strip(),
+            recipient_account_number=payload.recipient_account_number.strip(),
+            swift_code=payload.swift_code.strip().upper() if payload.swift_code else None,
+            reference=payload.reference.strip() if payload.reference else None,
+            fee=WIRE_FEE,
+            status="COMPLETED",
+        )
+        db.add(wire)
 
-    tx = perform_external_transfer(
-        db,
-        payload.sender_account_id,
-        payload.amount,
-        payload.recipient_name,
-        payload.recipient_bank,
-        payload.recipient_account_number,
-        payload.swift_code,
-        f"Wire transfer: {payload.reference or 'No reference'}",
-    )
+        perform_external_transfer(
+            db,
+            payload.sender_account_id,
+            payload.amount,
+            payload.recipient_name,
+            payload.recipient_bank,
+            payload.recipient_account_number,
+            payload.swift_code,
+            f"Wire transfer: {payload.reference or 'No reference'}",
+        )
 
-    db.commit()
-    db.refresh(wire)
-    _create_notification(
-        db, current_user.id, "TRANSFER",
-        f"Wire sent: ${payload.amount:,.2f}",
-        f"To {payload.recipient_name} at {payload.recipient_bank}. Fee: ${WIRE_FEE:,.2f}."
-    )
+        db.commit()
+        db.refresh(wire)
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Wire transfer failed. Please try again.")
+
+    try:
+        _create_notification(
+            db, current_user.id, "TRANSFER",
+            f"Wire sent: ${payload.amount:,.2f}",
+            f"To {payload.recipient_name} at {payload.recipient_bank}. Fee: ${WIRE_FEE:,.2f}."
+        )
+    except Exception:
+        pass  # Don't let notification failures block the response
+
     return wire

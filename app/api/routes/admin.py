@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -285,7 +286,7 @@ def admin_loans(status: str | None = None, current_user=Depends(get_current_user
 
 
 @router.patch("/loans/{loan_id}")
-def update_loan_status(loan_id: str, status: str, rate: float | None = None, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+def update_loan_status(loan_id: uuid.UUID, status: str, rate: float | None = None, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     _require_admin(current_user)
     loan = db.query(LoanApplication).filter(LoanApplication.id == loan_id).first()
     if not loan:
@@ -310,7 +311,7 @@ def admin_disputes(status: str | None = None, current_user=Depends(get_current_u
 
 
 @router.patch("/disputes/{dispute_id}")
-def update_dispute_status(dispute_id: str, status: str, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+def update_dispute_status(dispute_id: uuid.UUID, status: str, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     _require_admin(current_user)
     dispute = db.query(Dispute).filter(Dispute.id == dispute_id).first()
     if not dispute:
