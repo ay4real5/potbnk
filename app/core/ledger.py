@@ -38,7 +38,8 @@ def perform_transfer(
     sender_id: uuid.UUID,
     receiver_id: uuid.UUID,
     amount: Decimal,
-    description: str = "Transfer"
+    description: str = "Transfer",
+    idempotency_key: str | None = None,
 ):
     if amount <= 0:
         raise ValueError("Transfer amount must be greater than zero.")
@@ -67,7 +68,8 @@ def perform_transfer(
         receiver_id=receiver_id,
         amount=amount,
         description=description,
-        type="TRANSFER"
+        type="TRANSFER",
+        idempotency_key=idempotency_key,
     )
 
     try:

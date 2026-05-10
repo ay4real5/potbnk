@@ -3,7 +3,7 @@ from threading import Lock
 from functools import lru_cache
 
 from fastapi import HTTPException
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -39,9 +39,28 @@ def ensure_schema():
     with _schema_lock:
         if _schema_ready:
             return
-        Base.metadata.create_all(bind=get_engine())
+        engine = get_engine()
+        Base.metadata.create_all(bind=engine)
+        _apply_lightweight_migrations(engine)
         _schema_ready = True
         logger.info("Database schema check completed.")
+
+
+_LIGHTWEIGHT_MIGRATIONS = [
+    "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'POSTED'",
+    "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(80)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS ix_transactions_idempotency_key ON transactions (idempotency_key)",
+    "CREATE INDEX IF NOT EXISTS ix_transactions_status ON transactions (status)",
+]
+
+
+def _apply_lightweight_migrations(engine):
+    try:
+        with engine.begin() as connection:
+            for sql in _LIGHTWEIGHT_MIGRATIONS:
+                connection.execute(text(sql))
+    except SQLAlchemyError:
+        logger.exception("Lightweight migration failed; continuing with existing schema.")
 
 
 def get_db():

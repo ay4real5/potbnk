@@ -1,16 +1,24 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import api from '../api/client';
 import BankShell from '../components/BankShell';
-import { AlertTriangle, ArrowRight, Building2, CheckCircle, Clock, Landmark, Search, ShieldCheck, UserCheck, Zap } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Building2, CalendarClock, CheckCircle, Clock, Landmark, Repeat, Save, Search, ShieldCheck, Star, Trash2, UserCheck, Users, Zap } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 const QUICK_AMOUNTS = [25, 50, 100, 250, 500, 1000];
 const DAILY_LIMIT = 10000;
 
 const TRANSFER_TYPES = {
+  between: { label: 'Between my accounts', speed: 'Instant', fee: 0, icon: Repeat, limit: 10000 },
   internal: { label: 'Hunch account', speed: 'Instant', fee: 0, icon: Zap, limit: 10000 },
   external: { label: 'Other bank', speed: '1-3 business days', fee: 0, icon: Landmark, limit: 10000 },
 };
+
+const FREQUENCIES = [
+  { value: 'ONCE', label: 'One time' },
+  { value: 'WEEKLY', label: 'Weekly' },
+  { value: 'BIWEEKLY', label: 'Every 2 weeks' },
+  { value: 'MONTHLY', label: 'Monthly' },
+];
 
 const US_BANKS = [
   'Bank of America',
@@ -100,8 +108,18 @@ export default function Transfer() {
   const [reviewing, setReviewing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(null);
+  const [beneficiaries, setBeneficiaries] = useState([]);
+  const [savePayee, setSavePayee] = useState(false);
+  const [payeeNickname, setPayeeNickname] = useState('');
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleFrequency, setScheduleFrequency] = useState('ONCE');
+  const [scheduledList, setScheduledList] = useState([]);
   const debounceRef = useRef(null);
   const toast = useToast();
+
+  const refreshScheduled = () => api.get('/scheduled-transfers/').then(({ data }) => setScheduledList(data)).catch(() => {});
+  const refreshBeneficiaries = () => api.get('/beneficiaries/').then(({ data }) => setBeneficiaries(data)).catch(() => {});
 
   useEffect(() => {
     api.get('/accounts/').then(({ data }) => {
@@ -109,6 +127,8 @@ export default function Transfer() {
       if (data.length > 0) setForm((f) => ({ ...f, sender_account_id: data[0].id }));
     }).catch(() => toast.error('Unable to load your accounts.'));
     api.get('/accounts/transactions?limit=4').then(({ data }) => setRecentTx(data)).catch(() => {});
+    refreshBeneficiaries();
+    refreshScheduled();
   }, []);
 
   useEffect(() => {
@@ -147,11 +167,15 @@ export default function Transfer() {
   const exceedsBalance = totalDebit > availableBalance;
   const recipientReady = transferType === 'external'
     ? externalForm.recipient_name && externalForm.recipient_bank && (externalForm.recipient_bank !== 'Other bank' || customBankName.trim()) && externalForm.recipient_account_number.length >= 4
+    : transferType === 'between'
+    ? form.receiver_account_id && form.receiver_account_id !== form.sender_account_id
     : resolvedRecipient;
   const canReview = form.sender_account_id && amount > 0 && recipientReady && !exceedsLimit && !exceedsBalance;
-  const recipientLabel = transferType === 'external' ? externalForm.recipient_name : resolvedRecipient?.holder_name;
+  const recipientLabel = transferType === 'external' ? externalForm.recipient_name : transferType === 'between' ? (accounts.find((a) => a.id === form.receiver_account_id)?.account_type) : resolvedRecipient?.holder_name;
   const recipientDetail = transferType === 'external'
     ? `${externalForm.recipient_bank || 'External bank'} ${externalForm.recipient_account_number ? '••••' + externalForm.recipient_account_number.slice(-4) : ''}`
+    : transferType === 'between'
+    ? (accounts.find((a) => a.id === form.receiver_account_id) ? `${accounts.find((a) => a.id === form.receiver_account_id)?.account_type.replace(/_/g, ' ')} ••••${accounts.find((a) => a.id === form.receiver_account_id)?.account_number?.slice(-4)}` : 'Select receiving account')
     : resolvedRecipient ? `${resolvedRecipient.account_type} ••••${resolvedRecipient.account_number.slice(-4)}` : 'Enter recipient account';
 
   const handleReview = (e) => {
@@ -172,18 +196,58 @@ export default function Transfer() {
         ...externalForm,
         recipient_bank: externalForm.recipient_bank === 'Other bank' ? customBankName.trim() : externalForm.recipient_bank,
       };
-      const { data } = transferType === 'external'
-        ? await api.post('/accounts/external-transfer', externalPayload)
-        : await api.post('/accounts/transfer', payload);
+
+      // Scheduling flow
+      if (scheduleEnabled && scheduleDate) {
+        const scheduledPayload = {
+          sender_account_id: form.sender_account_id,
+          receiver_account_id: transferType === 'between' || transferType === 'internal' ? form.receiver_account_id : null,
+          external_recipient_name: transferType === 'external' ? externalPayload.recipient_name : null,
+          external_bank_name: transferType === 'external' ? externalPayload.recipient_bank : null,
+          external_account_number: transferType === 'external' ? externalPayload.recipient_account_number : null,
+          external_routing_number: transferType === 'external' ? externalPayload.routing_number : null,
+          amount,
+          description: form.description || 'Scheduled transfer',
+          frequency: scheduleFrequency,
+          next_run_at: new Date(scheduleDate).toISOString(),
+        };
+        await api.post('/scheduled-transfers/', scheduledPayload);
+        toast.success('Transfer scheduled successfully.');
+        setScheduleEnabled(false);
+        setScheduleDate('');
+        setScheduleFrequency('ONCE');
+        refreshScheduled();
+      } else if (transferType === 'external') {
+        const { data } = await api.post('/accounts/external-transfer', externalPayload);
+        setSuccess({ amount, reference: data.transaction_id, speed: data.estimated_arrival || selectedType.speed });
+      } else {
+        const { data } = await api.post('/accounts/transfer', payload);
+        setSuccess({ amount, reference: data.transaction_id, speed: data.estimated_arrival || selectedType.speed });
+      }
+
+      // Save payee after successful transfer
+      if (savePayee && transferType === 'external') {
+        await api.post('/beneficiaries/', {
+          nickname: payeeNickname.trim() || undefined,
+          recipient_name: externalForm.recipient_name,
+          bank_name: externalForm.recipient_bank === 'Other bank' ? customBankName.trim() : externalForm.recipient_bank,
+          account_number: externalForm.recipient_account_number,
+          routing_number: externalForm.routing_number || null,
+          is_internal: false,
+        });
+        refreshBeneficiaries();
+      }
+
       const { data: accs } = await api.get('/accounts/');
       setAccounts(accs);
       api.get('/accounts/transactions?limit=4').then(({ data: d }) => setRecentTx(d)).catch(() => {});
-      setSuccess({ amount, reference: data.transaction_id, speed: data.estimated_arrival || selectedType.speed });
       setResolvedRecipient(null);
       setRecipientInput('');
       setExternalForm({ recipient_name: '', recipient_bank: '', recipient_account_number: '', routing_number: '' });
       setCustomBankName('');
       setForm((f) => ({ ...f, receiver_account_id: '', amount: '', description: 'Transfer' }));
+      setSavePayee(false);
+      setPayeeNickname('');
       setReviewing(false);
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Transfer failed. Please try again.');
@@ -249,7 +313,14 @@ export default function Transfer() {
 
             <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#111a18]">
               <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Recipient</label>
-              {transferType === 'internal' ? (
+              {transferType === 'between' ? (
+                <div className="mt-4">
+                  <select value={form.receiver_account_id} onChange={(e) => setForm((f) => ({ ...f, receiver_account_id: e.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white">
+                    <option value="">Select receiving account</option>
+                    {accounts.filter((a) => a.id !== form.sender_account_id).map((a) => <option key={a.id} value={a.id}>{a.account_type.replace(/_/g, ' ')} ••••{a.account_number.slice(-4)} — ${formatMoney(a.balance)}</option>)}
+                  </select>
+                </div>
+              ) : transferType === 'internal' ? (
                 <div className="mt-4">
                   <div className="relative">
                     <input value={recipientInput} onChange={(e) => setRecipientInput(e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 pr-11 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Enter Hunch account number" autoComplete="off" />
@@ -259,17 +330,39 @@ export default function Transfer() {
                   {lookupError && <p className="mt-2 text-sm text-red-600">{lookupError}</p>}
                 </div>
               ) : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <input required value={externalForm.recipient_name} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_name: e.target.value }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Recipient full name" />
-                  <select required value={externalForm.recipient_bank} onChange={(e) => { setExternalForm((f) => ({ ...f, recipient_bank: e.target.value })); if (e.target.value !== 'Other bank') setCustomBankName(''); }} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white">
-                    <option value="">Select recipient bank</option>
-                    {US_BANKS.map((bank) => <option key={bank} value={bank}>{bank}</option>)}
-                  </select>
-                  {externalForm.recipient_bank === 'Other bank' && (
-                    <input required value={customBankName} onChange={(e) => setCustomBankName(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Enter bank name" />
+                <div className="mt-4 space-y-4">
+                  {beneficiaries.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Users size={16} className="text-slate-400" />
+                      <select value="" onChange={(e) => {
+                        const b = beneficiaries.find((x) => x.id === e.target.value);
+                        if (!b) return;
+                        setExternalForm({ recipient_name: b.recipient_name, recipient_bank: b.bank_name, recipient_account_number: b.account_number, routing_number: b.routing_number || '' });
+                      }} className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white">
+                        <option value="">Choose a saved payee</option>
+                        {beneficiaries.filter((b) => !b.is_internal).map((b) => <option key={b.id} value={b.id}>{b.nickname ? `${b.nickname} — ` : ''}{b.recipient_name} · {b.bank_name}</option>)}
+                      </select>
+                    </div>
                   )}
-                  <input required value={externalForm.recipient_account_number} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_account_number: e.target.value.replace(/\D/g, '') }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Account number" />
-                  <input value={externalForm.routing_number} onChange={(e) => setExternalForm((f) => ({ ...f, routing_number: e.target.value.replace(/\D/g, '') }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Routing number" />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <input required value={externalForm.recipient_name} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_name: e.target.value }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Recipient full name" />
+                    <select required value={externalForm.recipient_bank} onChange={(e) => { setExternalForm((f) => ({ ...f, recipient_bank: e.target.value })); if (e.target.value !== 'Other bank') setCustomBankName(''); }} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white">
+                      <option value="">Select recipient bank</option>
+                      {US_BANKS.map((bank) => <option key={bank} value={bank}>{bank}</option>)}
+                    </select>
+                    {externalForm.recipient_bank === 'Other bank' && (
+                      <input required value={customBankName} onChange={(e) => setCustomBankName(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Enter bank name" />
+                    )}
+                    <input required value={externalForm.recipient_account_number} onChange={(e) => setExternalForm((f) => ({ ...f, recipient_account_number: e.target.value.replace(/\D/g, '') }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Account number" />
+                    <input value={externalForm.routing_number} onChange={(e) => setExternalForm((f) => ({ ...f, routing_number: e.target.value.replace(/\D/g, '') }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Routing number" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input id="savePayee" type="checkbox" checked={savePayee} onChange={(e) => setSavePayee(e.target.checked)} className="h-4 w-4 accent-[#063b36]" />
+                    <label htmlFor="savePayee" className="text-sm text-slate-600 dark:text-white/60">Save this payee for future transfers</label>
+                  </div>
+                  {savePayee && (
+                    <input value={payeeNickname} onChange={(e) => setPayeeNickname(e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Nickname (optional)" />
+                  )}
                 </div>
               )}
             </section>
@@ -286,8 +379,23 @@ export default function Transfer() {
               {(exceedsLimit || exceedsBalance) && <p className="mt-3 flex items-center gap-2 text-sm text-red-600"><AlertTriangle size={15} /> {exceedsBalance ? 'Amount exceeds available balance.' : `Limit for ${selectedType.label} is $${formatMoney(selectedType.limit)}.`}</p>}
             </section>
 
+            <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#111a18]">
+              <div className="flex items-center gap-3">
+                <input id="scheduleEnabled" type="checkbox" checked={scheduleEnabled} onChange={(e) => setScheduleEnabled(e.target.checked)} className="h-4 w-4 accent-[#063b36]" />
+                <label htmlFor="scheduleEnabled" className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"><CalendarClock size={16} /> Schedule this transfer</label>
+              </div>
+              {scheduleEnabled && (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <input type="datetime-local" required value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                  <select value={scheduleFrequency} onChange={(e) => setScheduleFrequency(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white">
+                    {FREQUENCIES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                  </select>
+                </div>
+              )}
+            </section>
+
             <input type="text" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Memo (optional)" />
-            <button type="submit" disabled={!canReview} className="w-full rounded-2xl bg-[#063b36] py-4 text-base font-bold text-white transition hover:bg-[#041f1c] disabled:cursor-not-allowed disabled:opacity-50">Review transfer <ArrowRight className="ml-2 inline" size={16} /></button>
+            <button type="submit" disabled={!canReview} className="w-full rounded-2xl bg-[#063b36] py-4 text-base font-bold text-white transition hover:bg-[#041f1c] disabled:cursor-not-allowed disabled:opacity-50">{scheduleEnabled ? 'Review scheduled transfer' : 'Review transfer'} <ArrowRight className="ml-2 inline" size={16} /></button>
           </form>
 
           <aside className="lg:col-span-2 space-y-5">
@@ -308,6 +416,25 @@ export default function Transfer() {
               </div>
             </section>
             {recentTx.length > 0 && <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#111a18]"><div className="mb-3 flex items-center gap-2"><Clock size={14} className="text-slate-400" /><p className="text-xs font-bold uppercase tracking-widest text-slate-400">Recent activity</p></div><ul className="space-y-3">{recentTx.map((tx) => <li key={tx.id} className="flex items-center justify-between gap-3 text-xs"><div><p className="max-w-[160px] truncate font-semibold text-slate-700 dark:text-white/70">{tx.description || tx.type}</p><p className="mt-0.5 text-[10px] text-slate-400">{new Date(tx.created_at).toLocaleDateString()}</p></div><span className={tx.type === 'DEPOSIT' ? 'font-bold text-emerald-600' : 'font-bold text-red-500'}>{tx.type === 'DEPOSIT' ? '+' : '-'}${formatMoney(tx.amount)}</span></li>)}</ul></section>}
+            {scheduledList.length > 0 && (
+              <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#111a18]">
+                <div className="mb-3 flex items-center gap-2">
+                  <CalendarClock size={14} className="text-slate-400" />
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Scheduled</p>
+                </div>
+                <ul className="space-y-3">
+                  {scheduledList.map((s) => (
+                    <li key={s.id} className="flex items-center justify-between gap-2 text-xs">
+                      <div>
+                        <p className="max-w-[140px] truncate font-semibold text-slate-700 dark:text-white/70">{s.description || 'Scheduled transfer'}</p>
+                        <p className="mt-0.5 text-[10px] text-slate-400">{s.frequency} · {new Date(s.next_run_at).toLocaleDateString()}</p>
+                      </div>
+                      <span className="font-bold text-slate-900 dark:text-white">${formatMoney(s.amount)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </aside>
         </div>
       </div>

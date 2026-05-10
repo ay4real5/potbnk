@@ -240,13 +240,26 @@ def transfer(
             detail=f"Transfer exceeds daily limit of ${DAILY_LIMIT:,.2f}."
         )
 
+    # Idempotency: if a key was provided and an existing tx matches, return it
+    if payload.idempotency_key:
+        existing = db.query(Transaction).filter(Transaction.idempotency_key == payload.idempotency_key).first()
+        if existing:
+            db.refresh(sender)
+            return {
+                "status": "success",
+                "message": "Idempotent replay.",
+                "transaction_id": str(existing.id),
+                "remaining_balance": float(sender.balance),
+            }
+
     try:
         tx = perform_transfer(
             db,
             payload.sender_account_id,
             payload.receiver_account_id,
             payload.amount,
-            payload.description
+            payload.description,
+            idempotency_key=payload.idempotency_key,
         )
         db.refresh(sender)
         return {
