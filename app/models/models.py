@@ -243,6 +243,38 @@ class CheckDeposit(Base):
 	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
 
+class LoanApplication(Base):
+	__tablename__ = "loan_applications"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+	loan_type = Column(String(40), nullable=False)  # PERSONAL, HOME, AUTO, STUDENT
+	amount = Column(Numeric(12, 2), nullable=False)
+	term_months = Column(Integer, nullable=False)
+	purpose = Column(Text, nullable=True)
+	annual_income = Column(Numeric(12, 2), nullable=True)
+	status = Column(String(20), default="PENDING", nullable=False, index=True)  # PENDING, APPROVED, REJECTED, DISBURSED
+	rate = Column(Numeric(5, 2), nullable=True)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class WireTransfer(Base):
+	__tablename__ = "wire_transfers"
+
+	id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+	user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+	sender_account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True)
+	amount = Column(Numeric(12, 2), nullable=False)
+	recipient_name = Column(String(120), nullable=False)
+	recipient_bank = Column(String(120), nullable=False)
+	recipient_account_number = Column(String(40), nullable=False)
+	swift_code = Column(String(20), nullable=True)
+	reference = Column(String(80), nullable=True)
+	status = Column(String(20), default="PENDING", nullable=False, index=True)  # PENDING, COMPLETED, FAILED
+	fee = Column(Numeric(12, 2), default=25.00, nullable=False)
+	created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
 class AdminAuditLog(Base):
 	__tablename__ = "admin_audit_logs"
 

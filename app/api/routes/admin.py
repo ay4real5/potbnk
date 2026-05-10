@@ -9,7 +9,7 @@ from app.api.routes.auth import get_current_user
 from app.core.database import get_db
 from app.core.security import get_password_hash
 from app.core.state import locked_users as _locked_users
-from app.models.models import Account, AdminAuditLog, Transaction, User
+from app.models.models import Account, AdminAuditLog, Transaction, User, LoanApplication, Dispute, WireTransfer, Card
 from app.schemas.admin import (
     AdminAccountCreditRequest,
     AdminAuditItem,
@@ -272,3 +272,68 @@ def debit_user_account(
     return {"status": "success", "message": "Account debited.", "account_id": str(acct.id),
         "account_number": acct.account_number, "account_type": acct.account_type,
         "new_balance": float(acct.balance), "debited_amount": float(amount)}
+
+
+# ── Loan Applications ──────────────────────────────────────────────────────────
+@router.get("/loans")
+def admin_loans(status: str | None = None, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    _require_admin(current_user)
+    q = db.query(LoanApplication)
+    if status:
+        q = q.filter(LoanApplication.status == status.upper())
+    return q.order_by(LoanApplication.created_at.desc()).all()
+
+
+@router.patch("/loans/{loan_id}")
+def update_loan_status(loan_id: str, status: str, rate: float | None = None, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    _require_admin(current_user)
+    loan = db.query(LoanApplication).filter(LoanApplication.id == loan_id).first()
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found.")
+    loan.status = status.upper()
+    if rate is not None:
+        loan.rate = Decimal(str(rate))
+    db.commit()
+    db.refresh(loan)
+    _audit(db, getattr(current_user, "email", "?"), "update_loan_status", "loan", loan_id, f"status={status}")
+    return loan
+
+
+# ── Disputes ───────────────────────────────────────────────────────────────────
+@router.get("/disputes")
+def admin_disputes(status: str | None = None, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    _require_admin(current_user)
+    q = db.query(Dispute)
+    if status:
+        q = q.filter(Dispute.status == status.upper())
+    return q.order_by(Dispute.created_at.desc()).all()
+
+
+@router.patch("/disputes/{dispute_id}")
+def update_dispute_status(dispute_id: str, status: str, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    _require_admin(current_user)
+    dispute = db.query(Dispute).filter(Dispute.id == dispute_id).first()
+    if not dispute:
+        raise HTTPException(status_code=404, detail="Dispute not found.")
+    dispute.status = status.upper()
+    db.commit()
+    db.refresh(dispute)
+    _audit(db, getattr(current_user, "email", "?"), "update_dispute_status", "dispute", dispute_id, f"status={status}")
+    return dispute
+
+
+# ── Wire Transfers ─────────────────────────────────────────────────────────────
+@router.get("/wire-transfers")
+def admin_wires(status: str | None = None, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    _require_admin(current_user)
+    q = db.query(WireTransfer)
+    if status:
+        q = q.filter(WireTransfer.status == status.upper())
+    return q.order_by(WireTransfer.created_at.desc()).all()
+
+
+# ── Cards ──────────────────────────────────────────────────────────────────────
+@router.get("/cards")
+def admin_cards(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    _require_admin(current_user)
+    return db.query(Card).order_by(Card.created_at.desc()).all()

@@ -254,3 +254,47 @@ class CheckDepositResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+class LoanCreate(BaseModel):
+    loan_type: str
+    amount: Decimal
+    term_months: int
+    purpose: Optional[str] = None
+    annual_income: Optional[Decimal] = None
+
+class LoanResponse(BaseModel):
+    id: uuid.UUID
+    loan_type: str
+    amount: Decimal
+    term_months: int
+    purpose: Optional[str]
+    annual_income: Optional[Decimal]
+    status: str
+    rate: Optional[Decimal]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class WireTransferCreate(BaseModel):
+    sender_account_id: uuid.UUID
+    amount: Decimal
+    recipient_name: str
+    recipient_bank: str
+    recipient_account_number: str
+    swift_code: Optional[str] = None
+    reference: Optional[str] = None
+
+class WireTransferResponse(BaseModel):
+    id: uuid.UUID
+    sender_account_id: uuid.UUID
+    amount: Decimal
+    recipient_name: str
+    recipient_bank: str
+    recipient_account_number: str
+    swift_code: Optional[str]
+    reference: Optional[str]
+    status: str
+    fee: Decimal
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

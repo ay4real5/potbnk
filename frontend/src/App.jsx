@@ -14,6 +14,8 @@ import BillPay from './pages/BillPay'
 import Cards from './pages/Cards'
 import Statements from './pages/Statements'
 import CheckDeposit from './pages/CheckDeposit'
+import Loans from './pages/Loans'
+import WireTransfer from './pages/WireTransfer'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import NotFound from './pages/NotFound'
@@ -136,6 +138,14 @@ export default function App() {
       <Route
         path="/check-deposit"
         element={<ProtectedRoute><CheckDeposit /></ProtectedRoute>}
+      />
+      <Route
+        path="/loans"
+        element={<ProtectedRoute><Loans /></ProtectedRoute>}
+      />
+      <Route
+        path="/wire-transfer"
+        element={<ProtectedRoute><WireTransfer /></ProtectedRoute>}
       />
       <Route
         path="/admin"

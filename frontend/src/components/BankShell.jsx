@@ -23,6 +23,8 @@ const NAV_ITEMS = [
   { label: 'Cards',        href: '/cards' },
   { label: 'Statements',   href: '/statements' },
   { label: 'Check Deposit',href: '/check-deposit' },
+  { label: 'Loans',        href: '/loans' },
+  { label: 'Wire Transfer',href: '/wire-transfer' },
   { label: 'Transactions', href: '/transactions' },
   { label: 'Settings',     href: '/settings' },
 ];

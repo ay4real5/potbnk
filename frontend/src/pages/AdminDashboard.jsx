@@ -12,9 +12,11 @@ const ACTION_COLORS = {
   lock_user:      'text-amber-400',
   unlock_user:    'text-sky-400',
   reset_password: 'text-purple-400',
+  update_loan_status: 'text-emerald-400',
+  update_dispute_status: 'text-amber-400',
 };
 
-const TABS = ['Overview', 'Users', 'Balance Tools', 'Audit Log'];
+const TABS = ['Overview', 'Users', 'Loans', 'Disputes', 'Wires', 'Cards', 'Balance Tools', 'Audit Log'];
 
 /* ─── stat card ────────────────────────────────────────────────── */
 function StatCard({ label, value, sub, color = 'text-[#8fdb46]' }) {
@@ -307,6 +309,144 @@ function AuditLogTab() {
   );
 }
 
+/* ─── Loans tab ──────────────────────────────────────────────── */
+function LoansTab() {
+  const [loans, setLoans] = useState([]);
+  const [status, setStatus] = useState('');
+  useEffect(() => { api.get('/admin/loans', { params: status ? { status } : {} }).then((r) => setLoans(r.data)).catch(() => {}); }, [status]);
+  const updateStatus = async (id, newStatus, rate) => {
+    await api.patch(`/admin/loans/${id}`, null, { params: { status: newStatus, rate } });
+    api.get('/admin/loans', { params: status ? { status } : {} }).then((r) => setLoans(r.data)).catch(() => {});
+  };
+  return (
+    <div>
+      <div className="flex gap-2 mb-4">
+        {['','PENDING','APPROVED','REJECTED','DISBURSED'].map((s) => (
+          <button key={s || 'all'} onClick={() => setStatus(s)} className={`text-xs px-3 py-1 rounded-full border ${status === s ? 'bg-[#8fdb46] text-bank-dark border-[#8fdb46]' : 'border-white/20 text-white/60 hover:text-white'}`}>{s || 'All'}</button>
+        ))}
+      </div>
+      <div className="overflow-x-auto rounded-xl border border-white/10">
+        <table className="w-full text-sm">
+          <thead><tr className="border-b border-white/10 text-white/50 text-xs uppercase tracking-widest"><th className="text-left px-4 py-3">Type</th><th className="text-left px-4 py-3">Amount</th><th className="text-left px-4 py-3">Term</th><th className="text-left px-4 py-3">Rate</th><th className="text-left px-4 py-3">Status</th><th className="px-4 py-3" /></tr></thead>
+          <tbody>
+            {loans.map((l) => (
+              <tr key={l.id} className="border-b border-white/5 hover:bg-white/5 transition">
+                <td className="px-4 py-3 text-white/80">{l.loan_type}</td>
+                <td className="px-4 py-3 text-[#8fdb46]">{fmt(l.amount)}</td>
+                <td className="px-4 py-3 text-white/60">{l.term_months} mo</td>
+                <td className="px-4 py-3 text-white/60">{l.rate ? `${l.rate}%` : '—'}</td>
+                <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-full uppercase ${l.status === 'APPROVED' || l.status === 'DISBURSED' ? 'bg-emerald-500/20 text-emerald-300' : l.status === 'REJECTED' ? 'bg-red-500/20 text-red-300' : 'bg-amber-500/20 text-amber-300'}`}>{l.status}</span></td>
+                <td className="px-4 py-3 text-right">
+                  {l.status === 'PENDING' && (
+                    <div className="flex gap-1 justify-end">
+                      <button onClick={() => updateStatus(l.id, 'APPROVED', l.rate)} className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30">Approve</button>
+                      <button onClick={() => updateStatus(l.id, 'REJECTED')} className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30">Reject</button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {loans.length === 0 && <tr><td colSpan={6} className="px-4 py-6 text-center text-white/40 text-sm">No loans found.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Disputes tab ─────────────────────────────────────────── */
+function DisputesTab() {
+  const [disputes, setDisputes] = useState([]);
+  const [status, setStatus] = useState('');
+  useEffect(() => { api.get('/admin/disputes', { params: status ? { status } : {} }).then((r) => setDisputes(r.data)).catch(() => {}); }, [status]);
+  const updateStatus = async (id, newStatus) => {
+    await api.patch(`/admin/disputes/${id}`, null, { params: { status: newStatus } });
+    api.get('/admin/disputes', { params: status ? { status } : {} }).then((r) => setDisputes(r.data)).catch(() => {});
+  };
+  return (
+    <div>
+      <div className="flex gap-2 mb-4">
+        {['','OPEN','REVIEWING','RESOLVED','REJECTED'].map((s) => (
+          <button key={s || 'all'} onClick={() => setStatus(s)} className={`text-xs px-3 py-1 rounded-full border ${status === s ? 'bg-[#8fdb46] text-bank-dark border-[#8fdb46]' : 'border-white/20 text-white/60 hover:text-white'}`}>{s || 'All'}</button>
+        ))}
+      </div>
+      <div className="overflow-x-auto rounded-xl border border-white/10">
+        <table className="w-full text-sm">
+          <thead><tr className="border-b border-white/10 text-white/50 text-xs uppercase tracking-widest"><th className="text-left px-4 py-3">ID</th><th className="text-left px-4 py-3">Reason</th><th className="text-left px-4 py-3">Status</th><th className="px-4 py-3" /></tr></thead>
+          <tbody>
+            {disputes.map((d) => (
+              <tr key={d.id} className="border-b border-white/5 hover:bg-white/5 transition">
+                <td className="px-4 py-3 text-white/60 font-mono text-xs">{d.id.slice(0,8)}</td>
+                <td className="px-4 py-3 text-white/80 max-w-xs truncate">{d.reason}</td>
+                <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-full uppercase ${d.status === 'RESOLVED' ? 'bg-emerald-500/20 text-emerald-300' : d.status === 'REJECTED' ? 'bg-red-500/20 text-red-300' : 'bg-amber-500/20 text-amber-300'}`}>{d.status}</span></td>
+                <td className="px-4 py-3 text-right">
+                  {d.status === 'OPEN' && (
+                    <div className="flex gap-1 justify-end">
+                      <button onClick={() => updateStatus(d.id, 'RESOLVED')} className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30">Resolve</button>
+                      <button onClick={() => updateStatus(d.id, 'REJECTED')} className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30">Reject</button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {disputes.length === 0 && <tr><td colSpan={4} className="px-4 py-6 text-center text-white/40 text-sm">No disputes found.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Wires tab ────────────────────────────────────────────── */
+function WiresTab() {
+  const [wires, setWires] = useState([]);
+  useEffect(() => { api.get('/admin/wire-transfers').then((r) => setWires(r.data)).catch(() => {}); }, []);
+  return (
+    <div className="overflow-x-auto rounded-xl border border-white/10">
+      <table className="w-full text-sm">
+        <thead><tr className="border-b border-white/10 text-white/50 text-xs uppercase tracking-widest"><th className="text-left px-4 py-3">Amount</th><th className="text-left px-4 py-3">Recipient</th><th className="text-left px-4 py-3">Bank</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Date</th></tr></thead>
+        <tbody>
+          {wires.map((w) => (
+            <tr key={w.id} className="border-b border-white/5 hover:bg-white/5 transition">
+              <td className="px-4 py-3 text-[#8fdb46]">{fmt(w.amount)}</td>
+              <td className="px-4 py-3 text-white/80">{w.recipient_name}</td>
+              <td className="px-4 py-3 text-white/60">{w.recipient_bank}</td>
+              <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-full uppercase ${w.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>{w.status}</span></td>
+              <td className="px-4 py-3 text-white/50 text-xs whitespace-nowrap">{fmtDate(w.created_at)}</td>
+            </tr>
+          ))}
+          {wires.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-white/40 text-sm">No wire transfers found.</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ─── Cards tab ──────────────────────────────────────────────── */
+function CardsTab() {
+  const [cards, setCards] = useState([]);
+  useEffect(() => { api.get('/admin/cards').then((r) => setCards(r.data)).catch(() => {}); }, []);
+  return (
+    <div className="overflow-x-auto rounded-xl border border-white/10">
+      <table className="w-full text-sm">
+        <thead><tr className="border-b border-white/10 text-white/50 text-xs uppercase tracking-widest"><th className="text-left px-4 py-3">Last 4</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Limit</th><th className="text-left px-4 py-3">Expires</th><th className="text-left px-4 py-3">Date</th></tr></thead>
+        <tbody>
+          {cards.map((c) => (
+            <tr key={c.id} className="border-b border-white/5 hover:bg-white/5 transition">
+              <td className="px-4 py-3 text-white/80 font-mono">•••• {c.last4}</td>
+              <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-full uppercase ${c.status === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>{c.status}</span></td>
+              <td className="px-4 py-3 text-white/60">{fmt(c.daily_limit)}</td>
+              <td className="px-4 py-3 text-white/60">{String(c.expiry_month).padStart(2,'0')}/{c.expiry_year}</td>
+              <td className="px-4 py-3 text-white/50 text-xs whitespace-nowrap">{fmtDate(c.created_at)}</td>
+            </tr>
+          ))}
+          {cards.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-white/40 text-sm">No cards found.</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 /* ─── Main shell ───────────────────────────────────────────────── */
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -315,6 +455,10 @@ export default function AdminDashboard() {
   const tabContent = {
     Overview: <OverviewTab />,
     Users: <UsersTab />,
+    Loans: <LoansTab />,
+    Disputes: <DisputesTab />,
+    Wires: <WiresTab />,
+    Cards: <CardsTab />,
     'Balance Tools': <BalanceTool />,
     'Audit Log': <AuditLogTab />,
   };
