@@ -17,6 +17,11 @@ function typeBadge(type) {
   return base + ' bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400';
 }
 
+function typeLabel(type) {
+  if (type === 'ADMIN_CREDIT') return 'Transfer in';
+  return type.replace(/_/g, ' ');
+}
+
 function exportCSV(txs) {
   const header = ['Date', 'Type', 'Description', 'Amount (USD)'];
   const rows = txs.map((tx) => [
@@ -362,7 +367,7 @@ export default function Transactions() {
                           {tx.account_number ? '••••' + tx.account_number.slice(-4) : '—'}
                         </td>
                         <td className="px-5 py-3.5 text-center">
-                          <span className={typeBadge(tx.type)}>{tx.type}</span>
+                          <span className={typeBadge(tx.type)}>{typeLabel(tx.type)}</span>
                         </td>
                         <td className={'px-5 py-3.5 text-right whitespace-nowrap ' + amtCls(tx.type)}>
                           {sign}${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}

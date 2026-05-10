@@ -999,7 +999,7 @@ export default function Dashboard() {
                                 <p className="text-xs font-semibold text-slate-700 dark:text-white/80 truncate">
                                   {tx.description || tx.type}
                                 </p>
-                                <p className="text-[10px] text-slate-400">{tx.type.replace(/_/g, ' ')}</p>
+                                <p className="text-[10px] text-slate-400">{tx.type === 'ADMIN_CREDIT' ? 'Transfer in' : tx.type.replace(/_/g, ' ')}</p>
                               </div>
                             </div>
                           </td>

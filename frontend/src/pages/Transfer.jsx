@@ -153,6 +153,7 @@ export default function Transfer() {
         } else {
           setResolvedRecipient(data);
           setForm((f) => ({ ...f, receiver_account_id: data.id }));
+          setLookupError('');
         }
       } catch (err) {
         setLookupError(err.response?.data?.detail || 'Account not found.');
