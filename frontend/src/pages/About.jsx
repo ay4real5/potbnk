@@ -140,7 +140,7 @@ export default function About() {
         <p className="text-white/60 text-sm mb-10 max-w-lg mx-auto">
           In 2025, Hunch committed $500M in Community Reinvestment Act lending, supported 1,200 small businesses through our local grants program, and volunteered 40,000+ hours across our markets.
         </p>
-        <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-2xl mx-auto mb-10">
           {[
             { value: '$500M', label: 'CRA lending commitment' },
             { value: '1,200+', label: 'Small businesses supported' },

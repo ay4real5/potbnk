@@ -124,8 +124,8 @@ export default function Withdraw() {
             <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#111a18]">
               <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Withdrawal amount</label>
               <div className="mt-5 flex items-center justify-center rounded-3xl border border-slate-100 bg-slate-50 px-5 py-8 dark:border-white/10 dark:bg-white/5">
-                <span className="mr-2 text-5xl font-light text-slate-300">$</span>
-                <input type="number" required min="0.01" step="0.01" value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} className="w-full bg-transparent text-center text-5xl font-bold text-slate-900 outline-none dark:text-white" placeholder="0.00" />
+                <span className="mr-2 text-4xl sm:text-5xl font-light text-slate-300">$</span>
+                <input type="number" required min="0.01" step="0.01" value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} className="w-full bg-transparent text-center text-4xl sm:text-5xl font-bold text-slate-900 outline-none dark:text-white" placeholder="0.00" />
               </div>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {QUICK_AMOUNTS.map((quick) => <button key={quick} type="button" onClick={() => setForm((f) => ({ ...f, amount: String(quick) }))} className={`rounded-full px-4 py-2 text-sm font-semibold ${amount === quick ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/10 dark:text-white/60'}`}>${quick.toLocaleString()}</button>)}

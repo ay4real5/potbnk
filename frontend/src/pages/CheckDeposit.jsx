@@ -91,18 +91,18 @@ export default function CheckDeposit() {
           <div className="space-y-3">
             {deposits.map((d) => (
               <div key={d.id} className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-white/10 bg-white dark:bg-[#111a18] p-5 shadow-sm">
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${d.status === 'CLEARED' ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${d.status === 'CLEARED' ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
                     {d.status === 'CLEARED' ? <CheckCircle size={18} className="text-emerald-600" /> : <Clock size={18} className="text-amber-600" />}
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-800 dark:text-white">${formatMoney(d.amount)}</p>
-                    <p className="text-xs text-slate-400">{d.memo || 'Mobile check deposit'} · {new Date(d.created_at).toLocaleDateString()}</p>
-                    {d.hold_until && d.status === 'PENDING' && <p className="text-[10px] text-amber-500 mt-0.5">Hold until {new Date(d.hold_until).toLocaleDateString()}</p>}
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">${formatMoney(d.amount)}</p>
+                    <p className="text-xs text-slate-400 truncate">{d.memo || 'Mobile check deposit'} · {new Date(d.created_at).toLocaleDateString()}</p>
+                    {d.hold_until && d.status === 'PENDING' && <p className="text-[10px] text-amber-500 mt-0.5 truncate">Hold until {new Date(d.hold_until).toLocaleDateString()}</p>}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${d.status === 'CLEARED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>{d.status}</span>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${d.status === 'CLEARED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-emerald-400'}`}>{d.status}</span>
                   {d.status === 'PENDING' && (
                     <button onClick={() => handleClear(d.id)} className="text-xs font-semibold text-bank-teal hover:underline">Clear now</button>
                   )}

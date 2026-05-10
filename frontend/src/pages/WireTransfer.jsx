@@ -95,14 +95,14 @@ export default function WireTransfers() {
           <div className="space-y-3">
             {wires.map((w) => (
               <div key={w.id} className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-white/10 bg-white dark:bg-[#111a18] p-5 shadow-sm">
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${w.status === 'COMPLETED' ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${w.status === 'COMPLETED' ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
                     {w.status === 'COMPLETED' ? <CheckCircle size={18} className="text-emerald-600" /> : <Clock size={18} className="text-amber-600" />}
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-800 dark:text-white">${formatMoney(w.amount)} to {w.recipient_name}</p>
-                    <p className="text-xs text-slate-400">{w.recipient_bank} · Fee: ${formatMoney(w.fee)}</p>
-                    {w.reference && <p className="text-[10px] text-slate-400 mt-0.5">Ref: {w.reference}</p>}
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">${formatMoney(w.amount)} to {w.recipient_name}</p>
+                    <p className="text-xs text-slate-400 truncate">{w.recipient_bank} · Fee: ${formatMoney(w.fee)}</p>
+                    {w.reference && <p className="text-[10px] text-slate-400 mt-0.5 truncate">Ref: {w.reference}</p>}
                   </div>
                 </div>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${w.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>{w.status}</span>

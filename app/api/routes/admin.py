@@ -231,7 +231,7 @@ def credit_user_account(
     acct = _resolve_account(db, payload.account_id, payload.user_email, payload.account_type)
     acct.balance = Decimal(acct.balance) + amount
     db.add(Transaction(sender_id=None, receiver_id=acct.id, amount=amount, type="ADMIN_CREDIT",
-        description=(payload.description or "Admin credit").strip()))
+        description=(payload.description or "Transfer in").strip()))
     _audit(db, getattr(current_user, "email", "?"), "credit_account", "account", acct.id,
         f"amount={amount} account_number={acct.account_number} type={acct.account_type}")
     db.commit()

@@ -266,7 +266,7 @@ export default function Transactions() {
 
         {/* Summary stats */}
         <div className="bg-white dark:bg-[#111a18] rounded-2xl border border-slate-100 dark:border-white/10 p-4 shadow-sm mb-4 premium-enter premium-enter-delay-1">
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 mb-3">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total In</p>
               <p className="text-lg sm:text-xl font-bold text-emerald-600 tabular-nums">+${totalIn.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>

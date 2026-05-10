@@ -896,6 +896,31 @@ export default function Navbar({ overlay = false }) {
                     onLogin={closeMobileMenu}
                   />
 
+                  {activeTab === 'Business' && (
+                    <div className="grid grid-cols-1 gap-3">
+                      {BUSINESS_CARDS.map((card) => (
+                        <div
+                          key={card.title}
+                          className="bg-[#0d3426] rounded-xl p-4 flex flex-col gap-2 border border-white/5"
+                        >
+                          <p className="text-[#8fdb46] text-[10px] font-bold uppercase tracking-widest">
+                            {card.tag}
+                          </p>
+                          <h3 className="text-white text-lg font-serif leading-snug">
+                            {card.title}
+                          </h3>
+                          <Link
+                            to={card.href}
+                            onClick={closeMobileMenu}
+                            className="mt-1 inline-flex items-center justify-center rounded-full border-2 border-white/75 text-white text-sm font-bold px-5 py-2 hover:bg-white/10 transition-colors w-fit"
+                          >
+                            Continue
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="flex flex-col gap-1 pt-1">
                     {NAV_CATEGORIES.map((cat) => (
                       <button

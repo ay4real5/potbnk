@@ -59,16 +59,16 @@ export default function Statements() {
           <div className="space-y-3">
             {statements.map((s) => (
               <div key={s.id} className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-white/10 bg-white dark:bg-[#111a18] p-5 shadow-sm">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center shrink-0">
                     <FileText size={18} className="text-slate-600 dark:text-white/60" />
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-800 dark:text-white">{MONTHS[s.month - 1]} {s.year}</p>
-                    <p className="text-xs text-slate-400">{accounts.find((a) => a.id === s.account_id)?.account_type.replace(/_/g, ' ') || 'Account'} ••••{accounts.find((a) => a.id === s.account_id)?.account_number?.slice(-4) || ''}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{MONTHS[s.month - 1]} {s.year}</p>
+                    <p className="text-xs text-slate-400 truncate">{accounts.find((a) => a.id === s.account_id)?.account_type.replace(/_/g, ' ') || 'Account'} ••••{accounts.find((a) => a.id === s.account_id)?.account_number?.slice(-4) || ''}</p>
                   </div>
                 </div>
-                <button onClick={() => alert('In production, this would download the PDF statement.')} className="flex items-center gap-1.5 text-xs font-semibold text-bank-teal hover:underline">
+                <button onClick={() => alert('In production, this would download the PDF statement.')} className="flex items-center gap-1.5 text-xs font-semibold text-bank-teal hover:underline shrink-0">
                   <Download size={14} /> Download
                 </button>
               </div>

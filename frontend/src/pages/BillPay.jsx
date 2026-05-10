@@ -122,16 +122,16 @@ export default function BillPay() {
                 <ul className="space-y-3">
                   {payments.map((p) => (
                     <li key={p.id} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center shrink-0">
                           <CheckCircle size={14} className="text-emerald-600" />
                         </div>
-                        <div>
-                          <p className="font-semibold text-slate-700 dark:text-white/70">{billers.find((b) => b.id === p.biller_id)?.name || 'Biller'}</p>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-700 dark:text-white/70 truncate">{billers.find((b) => b.id === p.biller_id)?.name || 'Biller'}</p>
                           <p className="text-[10px] text-slate-400">{new Date(p.created_at).toLocaleDateString()}</p>
                         </div>
                       </div>
-                      <span className="font-bold text-slate-900 dark:text-white">-${formatMoney(p.amount)}</span>
+                      <span className="font-bold text-slate-900 dark:text-white shrink-0">-${formatMoney(p.amount)}</span>
                     </li>
                   ))}
                 </ul>

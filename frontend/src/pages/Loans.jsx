@@ -113,17 +113,17 @@ export default function Loans() {
           <div className="space-y-3">
             {applications.map((app) => (
               <div key={app.id} className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-white/10 bg-white dark:bg-[#111a18] p-5 shadow-sm">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-[#063b36]/10 dark:bg-[#7CFC00]/10 flex items-center justify-center">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#063b36]/10 dark:bg-[#7CFC00]/10 flex items-center justify-center shrink-0">
                     <DollarSign size={18} className="text-[#063b36] dark:text-[#7CFC00]" />
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-800 dark:text-white">{app.loan_type.replace(/_/g, ' ')} Loan</p>
-                    <p className="text-xs text-slate-400">${formatMoney(app.amount)} · {app.term_months} months · Rate: {app.rate ? `${app.rate}%` : 'Pending'}</p>
-                    {app.purpose && <p className="text-[10px] text-slate-400 mt-0.5">{app.purpose}</p>}
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{app.loan_type.replace(/_/g, ' ')} Loan</p>
+                    <p className="text-xs text-slate-400 truncate">${formatMoney(app.amount)} · {app.term_months} months · Rate: {app.rate ? `${app.rate}%` : 'Pending'}</p>
+                    {app.purpose && <p className="text-[10px] text-slate-400 mt-0.5 truncate">{app.purpose}</p>}
                   </div>
                 </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${statusColor(app.status)}`}>{app.status}</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 ${statusColor(app.status)}`}>{app.status}</span>
               </div>
             ))}
           </div>

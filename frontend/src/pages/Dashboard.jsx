@@ -649,7 +649,7 @@ export default function Dashboard() {
       <BankShell title="Dashboard">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-5">
           <div className="h-36 sm:h-44 rounded-2xl animate-pulse bg-[#063b36]/30" />
-          <div className="grid grid-cols-4 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             {[0, 1, 2, 3].map((i) => <div key={i} className="h-16 sm:h-20 bg-white dark:bg-white/5 rounded-2xl animate-pulse border border-slate-100 dark:border-white/10" />)}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

@@ -179,7 +179,7 @@ export default function Locations() {
 
       {/* Stats */}
       <div className="bg-[#0d2b26] border-t border-white/10 py-6 px-4">
-        <div className="max-w-4xl mx-auto grid grid-cols-3 gap-4 text-center">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
           {[
             { value: '400+', label: 'Branch locations' },
             { value: '30K+', label: 'Partner ATMs' },
