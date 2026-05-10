@@ -36,7 +36,7 @@ function useCountUp(target, duration = 1100) {
 // ── helpers ────────────────────────────────────────────────────────────────
 
 const typeSign = (type, accountIds, tx) => {
-  if (type === 'DEPOSIT') return '+';
+  if (type === 'DEPOSIT' || type === 'ADMIN_CREDIT') return '+';
   if (type === 'WITHDRAWAL') return '-';
   return accountIds.has(tx.sender_id) ? '-' : '+';
 };
@@ -965,7 +965,7 @@ export default function Dashboard() {
                   </thead>
                   <tbody>
                     {recentTx.map((tx) => {
-                      const isDeposit = tx.type === 'DEPOSIT';
+                      const isDeposit = tx.type === 'DEPOSIT' || tx.type === 'ADMIN_CREDIT';
                       const isWithdrawal = tx.type === 'WITHDRAWAL';
                       const isTransfer = tx.type === 'TRANSFER';
                       const sign = typeSign(tx.type, myAccountIds, tx);
