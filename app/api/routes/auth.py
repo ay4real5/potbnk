@@ -328,25 +328,30 @@ def update_me(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    # Re-query in the current session because get_current_user closes its own session
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
     if payload.full_name is not None:
-        current_user.full_name = payload.full_name
+        user.full_name = payload.full_name
 
     if payload.new_password is not None:
         if not payload.current_password:
             raise HTTPException(status_code=400, detail="Current password is required to set a new password.")
-        if not verify_password(payload.current_password, current_user.hashed_password):
+        if not verify_password(payload.current_password, user.hashed_password):
             raise HTTPException(status_code=400, detail="Current password is incorrect.")
         if len(payload.new_password) < 8:
             raise HTTPException(status_code=400, detail="New password must be at least 8 characters.")
-        current_user.hashed_password = get_password_hash(payload.new_password)
+        user.hashed_password = get_password_hash(payload.new_password)
 
     db.commit()
-    db.refresh(current_user)
+    db.refresh(user)
     return {
-        "id": current_user.id,
-        "full_name": current_user.full_name,
-        "email": current_user.email,
-        "created_at": str(current_user.created_at)
+        "id": user.id,
+        "full_name": user.full_name,
+        "email": user.email,
+        "created_at": str(user.created_at)
     }
 
 
