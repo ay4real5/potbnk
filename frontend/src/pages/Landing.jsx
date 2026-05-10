@@ -242,19 +242,17 @@ export default function Landing() {
           <p className="text-left sm:text-center text-white/75 mb-8 sm:mb-10 max-w-2xl sm:mx-auto text-base sm:text-lg">
             Financial products tailored for how we live, build, protect, and grow together.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {products.slice(0, 8).map((item) => (
               <Link
                 to={item.href}
                 key={item.name}
-                className="group bg-[#055f64] hover:bg-[#0a6b71] rounded-2xl px-4 py-4 sm:p-5 transition-all border border-white/10 hover:border-white/30 flex items-start justify-between gap-3 min-h-[92px] sm:min-h-[120px]"
+                className="group bg-[#055f64] hover:bg-[#0a6b71] rounded-xl px-5 py-4 transition-colors flex items-start justify-between gap-3"
               >
-                <div>
-                  <p className="text-white text-lg sm:text-2xl font-serif leading-tight break-words">
-                    {item.name}
-                  </p>
-                </div>
-                <span className="text-white/85 text-3xl sm:text-2xl leading-none group-hover:translate-x-1 transition-transform">›</span>
+                <p className="text-white text-[15px] sm:text-base font-medium leading-snug break-words">
+                  {item.name}
+                </p>
+                <span className="text-white/80 text-sm leading-none mt-0.5 shrink-0 group-hover:translate-x-0.5 transition-transform">›</span>
               </Link>
             ))}
           </div>
