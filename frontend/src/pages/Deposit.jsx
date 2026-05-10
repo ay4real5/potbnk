@@ -165,7 +165,7 @@ export default function Deposit() {
                 <input required maxLength={4} value={fundingSource.account_last4} onChange={(e) => setFundingSource((f) => ({ ...f, account_last4: e.target.value.replace(/\D/g, '').slice(0, 4) }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Account last 4" />
                 <input maxLength={4} value={fundingSource.routing_last4} onChange={(e) => setFundingSource((f) => ({ ...f, routing_last4: e.target.value.replace(/\D/g, '').slice(0, 4) }))} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#063b36] dark:border-white/10 dark:bg-white/5 dark:text-white" placeholder="Routing last 4" />
               </div>
-              <p className="mt-3 text-xs text-slate-500">For this demo, linked-bank details are used to create realistic transaction descriptions only.</p>
+              <p className="mt-3 text-xs text-slate-500">Linked account details help verify the funding source and keep your transaction record accurate.</p>
             </section>
 
             <button type="submit" disabled={!canReview} className="w-full rounded-2xl bg-[#063b36] py-4 text-base font-bold text-white transition hover:bg-[#041f1c] disabled:cursor-not-allowed disabled:opacity-50">Review deposit <ArrowRight className="ml-2 inline" size={16} /></button>
@@ -188,7 +188,7 @@ export default function Deposit() {
                 <Clock3 className="mt-0.5 text-slate-400" size={18} />
                 <div>
                   <p className="font-bold text-slate-900 dark:text-white">Funds availability</p>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-white/50">Availability depends on method, cutoff time, and account review. Posted balances update immediately in this simulated environment.</p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-white/50">Availability depends on method, cutoff time, account standing, and routine security review.</p>
                 </div>
               </div>
             </section>
@@ -198,7 +198,7 @@ export default function Deposit() {
                 <Building2 className="mt-0.5 text-slate-400" size={18} />
                 <div>
                   <p className="font-bold text-slate-900 dark:text-white">Standard bank behavior</p>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-white/50">Real banks verify ownership, run risk checks, and may hold deposits before withdrawal. This app simulates the workflow without live ACH or card rails.</p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-white/50">Deposits may be reviewed for account ownership, risk controls, and funds availability before withdrawal.</p>
                 </div>
               </div>
             </section>

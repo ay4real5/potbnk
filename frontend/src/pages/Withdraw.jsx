@@ -187,7 +187,7 @@ export default function Withdraw() {
             <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#111a18]">
               <div className="flex items-start gap-3">
                 <Clock3 className="mt-0.5 text-slate-400" size={18} />
-                <p className="text-sm text-slate-500 dark:text-white/50">Real withdrawals may be reviewed for fraud, weekends, holidays, and cutoff times. This app simulates that workflow.</p>
+                <p className="text-sm text-slate-500 dark:text-white/50">Withdrawals may be reviewed for fraud prevention, weekends, holidays, and cutoff times before funds arrive.</p>
               </div>
             </section>
           </aside>
