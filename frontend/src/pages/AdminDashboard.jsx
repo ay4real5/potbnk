@@ -14,9 +14,11 @@ const ACTION_COLORS = {
   reset_password: 'text-purple-400',
   update_loan_status: 'text-emerald-400',
   update_dispute_status: 'text-amber-400',
+  approve_external_transfer: 'text-emerald-400',
+  reject_external_transfer:  'text-red-400',
 };
 
-const TABS = ['Overview', 'Users', 'Loans', 'Disputes', 'Wires', 'Cards', 'Balance Tools', 'Audit Log'];
+const TABS = ['Overview', 'Users', 'Pending Transfers', 'Loans', 'Disputes', 'Wires', 'Cards', 'Balance Tools', 'Audit Log'];
 
 /* ─── stat card ────────────────────────────────────────────────── */
 function StatCard({ label, value, sub, color = 'text-[#8fdb46]' }) {
@@ -309,6 +311,73 @@ function AuditLogTab() {
   );
 }
 
+/* ─── Pending Transfers tab ────────────────────────────────── */
+function PendingTransfersTab() {
+  const [txs, setTxs] = useState([]);
+  const [busyId, setBusyId] = useState(null);
+  const [msg, setMsg] = useState('');
+
+  const refresh = () => {
+    api.get('/admin/pending-transfers').then((r) => setTxs(r.data)).catch(() => {});
+  };
+  useEffect(() => { refresh(); }, []);
+
+  const handleApprove = async (id) => {
+    setBusyId(id);
+    try {
+      await api.post(`/admin/pending-transfers/${id}/approve`);
+      setMsg('Transfer approved and funds deducted.');
+      refresh();
+    } catch (e) {
+      setMsg(e.response?.data?.detail || 'Approval failed.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleReject = async (id) => {
+    setBusyId(id);
+    try {
+      await api.post(`/admin/pending-transfers/${id}/reject`);
+      setMsg('Transfer rejected.');
+      refresh();
+    } catch (e) {
+      setMsg(e.response?.data?.detail || 'Rejection failed.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div>
+      {msg && <Alert msg={msg} type={msg.includes('approved') ? 'success' : 'error'} />}
+      <div className="overflow-x-auto rounded-xl border border-white/10">
+        <table className="w-full text-sm">
+          <thead><tr className="border-b border-white/10 text-white/50 text-xs uppercase tracking-widest"><th className="text-left px-4 py-3">User</th><th className="text-left px-4 py-3">Account</th><th className="text-left px-4 py-3">Amount</th><th className="text-left px-4 py-3">Description</th><th className="text-left px-4 py-3">Date</th><th className="px-4 py-3" /></tr></thead>
+          <tbody>
+            {txs.map((t) => (
+              <tr key={t.id} className="border-b border-white/5 hover:bg-white/5 transition">
+                <td className="px-4 py-3 text-white/80">{t.user?.full_name}<br/><span className="text-white/40 text-xs">{t.user?.email}</span></td>
+                <td className="px-4 py-3 text-white/60 text-xs">{t.sender_account?.account_type}<br/>{t.sender_account?.account_number}</td>
+                <td className="px-4 py-3 text-[#8fdb46] font-semibold">{fmt(t.amount)}</td>
+                <td className="px-4 py-3 text-white/60 text-xs max-w-xs truncate">{t.description}</td>
+                <td className="px-4 py-3 text-white/50 text-xs whitespace-nowrap">{fmtDate(t.created_at)}</td>
+                <td className="px-4 py-3 text-right">
+                  <div className="flex gap-1 justify-end">
+                    <button onClick={() => handleApprove(t.id)} disabled={busyId === t.id} className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-50">{busyId === t.id ? '…' : 'Approve'}</button>
+                    <button onClick={() => handleReject(t.id)} disabled={busyId === t.id} className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 disabled:opacity-50">{busyId === t.id ? '…' : 'Reject'}</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {txs.length === 0 && <tr><td colSpan={6} className="px-4 py-6 text-center text-white/40 text-sm">No pending external transfers.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Loans tab ──────────────────────────────────────────────── */
 function LoansTab() {
   const [loans, setLoans] = useState([]);
@@ -455,6 +524,7 @@ export default function AdminDashboard() {
   const tabContent = {
     Overview: <OverviewTab />,
     Users: <UsersTab />,
+    'Pending Transfers': <PendingTransfersTab />,
     Loans: <LoansTab />,
     Disputes: <DisputesTab />,
     Wires: <WiresTab />,

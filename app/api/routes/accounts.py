@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from app.core.database import get_db
-from app.core.ledger import perform_transfer, perform_external_transfer, perform_deposit, perform_withdrawal
+from app.core.ledger import perform_transfer, perform_external_transfer_hold, perform_deposit, perform_withdrawal
 from app.api.routes.auth import get_current_user
 from app.models.models import User, Account, Transaction, Notification
 from app.api.routes.auth import _create_notification
@@ -304,7 +304,7 @@ def external_transfer(
         raise HTTPException(status_code=400, detail="Recipient account number must be at least 4 digits.")
 
     try:
-        tx = perform_external_transfer(
+        tx = perform_external_transfer_hold(
             db,
             payload.sender_account_id,
             payload.amount,
@@ -315,12 +315,12 @@ def external_transfer(
             payload.description
         )
         db.refresh(sender)
-        _create_notification(db, current_user.id, "TRANSFER", f"External transfer of ${payload.amount:,.2f}", f"Scheduled to {payload.recipient_bank}.")
+        _create_notification(db, current_user.id, "TRANSFER", f"External transfer of ${payload.amount:,.2f}", f"Pending admin approval to {payload.recipient_bank}.")
         return {
             "status": "success",
-            "message": f"${payload.amount:,.2f} scheduled to {payload.recipient_bank}.",
+            "message": f"${payload.amount:,.2f} sent to {payload.recipient_bank}. Awaiting admin approval.",
             "transaction_id": str(tx.id),
-            "estimated_arrival": "1-3 business days",
+            "estimated_arrival": "1-3 business days after approval",
             "remaining_balance": float(sender.balance)
         }
     except ValueError as e:

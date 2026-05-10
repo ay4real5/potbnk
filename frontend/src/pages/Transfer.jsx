@@ -271,7 +271,7 @@ export default function Transfer() {
         refreshScheduled();
       } else if (transferType === 'external') {
         const { data } = await api.post('/accounts/external-transfer', externalPayload);
-        setSuccess({ amount, reference: data.transaction_id, speed: data.estimated_arrival || selectedType.speed });
+        setSuccess({ amount, reference: data.transaction_id, speed: data.estimated_arrival || selectedType.speed, pendingApproval: true });
       } else {
         const { data } = await api.post('/accounts/transfer', payload);
         setSuccess({ amount, reference: data.transaction_id, speed: data.estimated_arrival || selectedType.speed });
@@ -313,13 +313,16 @@ export default function Transfer() {
       {success && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl dark:bg-[#111a18]">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-              <CheckCircle className="text-emerald-600" size={36} />
+            <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${success.pendingApproval ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
+              <CheckCircle className={success.pendingApproval ? 'text-amber-600' : 'text-emerald-600'} size={36} />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Transfer submitted</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{success.pendingApproval ? 'Sent — Awaiting approval' : 'Transfer submitted'}</h2>
             <p className="mt-2 text-4xl font-bold text-[#063b36] dark:text-[#7CFC00]">${formatMoney(success.amount)}</p>
             <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-left text-sm text-slate-600 dark:bg-white/5 dark:text-white/60">
               <div className="flex justify-between"><span>Delivery</span><span className="font-semibold text-slate-900 dark:text-white">{success.speed}</span></div>
+              {success.pendingApproval && (
+                <div className="mt-2 flex justify-between"><span>Status</span><span className="font-semibold text-amber-600 dark:text-amber-400">Processing</span></div>
+              )}
               <div className="mt-2 flex justify-between"><span>Reference</span><span className="font-mono text-xs text-slate-900 dark:text-white">{String(success.reference).slice(0, 8).toUpperCase()}</span></div>
             </div>
             <button onClick={() => setSuccess(null)} className="mt-6 w-full rounded-xl bg-[#063b36] py-3 font-semibold text-white hover:bg-[#041f1c]">Done</button>

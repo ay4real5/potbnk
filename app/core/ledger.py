@@ -199,6 +199,107 @@ def perform_external_transfer(
         db.rollback()
         raise ValueError("External transfer failed. Please try again.")
 
+
+def perform_external_transfer_hold(
+    db: Session,
+    sender_id: uuid.UUID,
+    amount: Decimal,
+    recipient_name: str,
+    recipient_bank: str,
+    recipient_account_number: str,
+    routing_number: str | None = None,
+    description: str = "External transfer"
+):
+    """Create an EXTERNAL_TRANSFER transaction with status PROCESSING.
+    Balance is NOT deducted until an admin approves it."""
+    if amount <= 0:
+        raise ValueError("Transfer amount must be greater than zero.")
+
+    sender = db.query(Account).filter(Account.id == sender_id).with_for_update().first()
+
+    if not sender:
+        raise ValueError("Sender account not found.")
+    if sender.balance < amount:
+        raise ValueError("Insufficient funds.")
+
+    masked_account = recipient_account_number[-4:].rjust(4, "*")
+    routing_label = f" Routing {routing_number[-4:].rjust(4, '*')}." if routing_number else ""
+    tx_description = (
+        f"{description or 'External transfer'} to {recipient_name} at "
+        f"{recipient_bank} account {masked_account}.{routing_label}"
+    )
+
+    tx = Transaction(
+        id=uuid.uuid4(),
+        sender_id=sender_id,
+        receiver_id=None,
+        amount=amount,
+        description=tx_description,
+        type="EXTERNAL_TRANSFER",
+        status="PROCESSING",
+        category=_categorize(tx_description, "EXTERNAL_TRANSFER"),
+    )
+
+    try:
+        db.add(tx)
+        db.commit()
+        db.refresh(tx)
+        return tx
+    except SQLAlchemyError:
+        db.rollback()
+        raise ValueError("External transfer failed. Please try again.")
+
+
+def approve_external_transfer(db: Session, tx_id: uuid.UUID):
+    """Admin approves a pending external transfer: deduct balance and mark POSTED."""
+    tx = db.query(Transaction).filter(
+        Transaction.id == tx_id,
+        Transaction.type == "EXTERNAL_TRANSFER",
+        Transaction.status == "PROCESSING",
+    ).with_for_update().first()
+
+    if not tx:
+        raise ValueError("Pending transfer not found.")
+
+    sender = db.query(Account).filter(Account.id == tx.sender_id).with_for_update().first()
+    if not sender:
+        raise ValueError("Sender account not found.")
+    if sender.balance < tx.amount:
+        raise ValueError("Insufficient funds to approve this transfer.")
+
+    sender.balance -= tx.amount
+    tx.status = "POSTED"
+
+    try:
+        db.commit()
+        db.refresh(tx)
+        return tx
+    except SQLAlchemyError:
+        db.rollback()
+        raise ValueError("Approval failed. Please try again.")
+
+
+def reject_external_transfer(db: Session, tx_id: uuid.UUID):
+    """Admin rejects a pending external transfer: mark REJECTED."""
+    tx = db.query(Transaction).filter(
+        Transaction.id == tx_id,
+        Transaction.type == "EXTERNAL_TRANSFER",
+        Transaction.status == "PROCESSING",
+    ).with_for_update().first()
+
+    if not tx:
+        raise ValueError("Pending transfer not found.")
+
+    tx.status = "REJECTED"
+
+    try:
+        db.commit()
+        db.refresh(tx)
+        return tx
+    except SQLAlchemyError:
+        db.rollback()
+        raise ValueError("Rejection failed. Please try again.")
+
 # Daily withdrawal limit
 _DAILY_WITHDRAWAL_LIMIT = Decimal("10000.00")
 

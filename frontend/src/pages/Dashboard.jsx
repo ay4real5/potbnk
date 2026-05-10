@@ -1020,8 +1020,14 @@ export default function Dashboard() {
                             </span>
                           </td>
                           <td className="px-5 py-3 text-center hidden md:table-cell">
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
-                              {tx.status || 'Completed'}
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                              tx.status === 'PROCESSING'
+                                ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                                : tx.status === 'REJECTED'
+                                ? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                                : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                            }`}>
+                              {tx.status === 'PROCESSING' ? 'Processing' : tx.status === 'REJECTED' ? 'Rejected' : 'Completed'}
                             </span>
                           </td>
                         </tr>

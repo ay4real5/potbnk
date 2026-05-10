@@ -6,11 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from app.api.routes.auth import get_current_user
+from app.api.routes.auth import get_current_user, _create_notification
 from app.core.database import get_db
 from app.core.security import get_password_hash
 from app.core.state import locked_users as _locked_users
-from app.models.models import Account, AdminAuditLog, Transaction, User, LoanApplication, Dispute, WireTransfer, Card
+from app.models.models import Account, AdminAuditLog, Transaction, User, LoanApplication, Dispute, WireTransfer, Card, Notification
+from app.core.ledger import approve_external_transfer, reject_external_transfer
 from app.schemas.admin import (
     AdminAccountCreditRequest,
     AdminAuditItem,
@@ -338,3 +339,83 @@ def admin_wires(status: str | None = None, current_user=Depends(get_current_user
 def admin_cards(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     _require_admin(current_user)
     return db.query(Card).order_by(Card.created_at.desc()).all()
+
+
+# ── Pending External Transfers ─────────────────────────────────────────────────
+@router.get("/pending-transfers")
+def admin_pending_transfers(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    _require_admin(current_user)
+    txs = (
+        db.query(Transaction)
+        .filter(Transaction.type == "EXTERNAL_TRANSFER", Transaction.status == "PROCESSING")
+        .order_by(Transaction.created_at.desc())
+        .all()
+    )
+    result = []
+    for tx in txs:
+        sender = db.query(Account).filter(Account.id == tx.sender_id).first() if tx.sender_id else None
+        user = sender.user if sender else None
+        result.append({
+            "id": str(tx.id),
+            "sender_account_id": str(tx.sender_id) if tx.sender_id else None,
+            "amount": float(tx.amount),
+            "description": tx.description,
+            "status": tx.status,
+            "created_at": str(tx.created_at),
+            "user": {
+                "id": str(user.id),
+                "full_name": user.full_name,
+                "email": user.email,
+            } if user else None,
+            "sender_account": {
+                "id": str(sender.id),
+                "account_number": sender.account_number,
+                "account_type": sender.account_type,
+                "balance": float(sender.balance),
+            } if sender else None,
+        })
+    return result
+
+
+@router.post("/pending-transfers/{tx_id}/approve")
+def approve_pending_transfer(
+    tx_id: uuid.UUID,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_admin(current_user)
+    try:
+        tx = approve_external_transfer(db, tx_id)
+        sender = db.query(Account).filter(Account.id == tx.sender_id).first()
+        if sender:
+            _create_notification(
+                db, sender.user_id, "TRANSFER",
+                f"External transfer approved: ${float(tx.amount):,.2f}",
+                f"Your external transfer of ${float(tx.amount):,.2f} has been approved and sent."
+            )
+        _audit(db, getattr(current_user, "email", "?"), "approve_external_transfer", "transaction", tx_id, f"amount={float(tx.amount)}")
+        return {"status": "success", "message": "Transfer approved and funds deducted.", "transaction_id": str(tx.id)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/pending-transfers/{tx_id}/reject")
+def reject_pending_transfer(
+    tx_id: uuid.UUID,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_admin(current_user)
+    try:
+        tx = reject_external_transfer(db, tx_id)
+        sender = db.query(Account).filter(Account.id == tx.sender_id).first()
+        if sender:
+            _create_notification(
+                db, sender.user_id, "TRANSFER",
+                f"External transfer rejected: ${float(tx.amount):,.2f}",
+                f"Your external transfer of ${float(tx.amount):,.2f} has been rejected by the admin."
+            )
+        _audit(db, getattr(current_user, "email", "?"), "reject_external_transfer", "transaction", tx_id, f"amount={float(tx.amount)}")
+        return {"status": "success", "message": "Transfer rejected.", "transaction_id": str(tx.id)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
