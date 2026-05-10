@@ -16,6 +16,7 @@ import Statements from './pages/Statements'
 import CheckDeposit from './pages/CheckDeposit'
 import Loans from './pages/Loans'
 import WireTransfer from './pages/WireTransfer'
+import Zelle from './pages/Zelle'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import NotFound from './pages/NotFound'
@@ -146,6 +147,10 @@ export default function App() {
       <Route
         path="/wire-transfer"
         element={<ProtectedRoute><WireTransfer /></ProtectedRoute>}
+      />
+      <Route
+        path="/zelle"
+        element={<ProtectedRoute><Zelle /></ProtectedRoute>}
       />
       <Route
         path="/admin"
