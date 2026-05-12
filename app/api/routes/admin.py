@@ -341,6 +341,40 @@ def admin_cards(current_user=Depends(get_current_user), db: Session = Depends(ge
     return db.query(Card).order_by(Card.created_at.desc()).all()
 
 
+# ── Update account number ─────────────────────────────────────────────────────
+@router.patch("/accounts/{account_id}/number")
+def update_account_number(
+    account_id: uuid.UUID,
+    new_number: str = Query(..., description="The new account number"),
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_admin(current_user)
+    new_number = new_number.strip()
+    if not new_number:
+        raise HTTPException(status_code=400, detail="Account number cannot be empty.")
+    if len(new_number) > 20:
+        raise HTTPException(status_code=400, detail="Account number cannot exceed 20 characters.")
+    account = db.query(Account).filter(Account.id == account_id).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found.")
+    existing = db.query(Account).filter(Account.account_number == new_number, Account.id != account_id).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="That account number is already in use.")
+    old_number = account.account_number
+    account.account_number = new_number
+    _audit(db, getattr(current_user, "email", "?"), "update_account_number", "account", account.id,
+           f"old={old_number} new={new_number}")
+    db.commit()
+    db.refresh(account)
+    return {
+        "status": "success",
+        "message": f"Account number updated from {old_number} to {new_number}.",
+        "account_id": str(account.id),
+        "account_number": account.account_number,
+    }
+
+
 # ── Pending External Transfers ─────────────────────────────────────────────────
 @router.get("/pending-transfers")
 def admin_pending_transfers(current_user=Depends(get_current_user), db: Session = Depends(get_db)):

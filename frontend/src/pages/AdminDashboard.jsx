@@ -53,6 +53,58 @@ function Input({ label, value, onChange, type = 'text', placeholder, required })
   );
 }
 
+/* ─── Account row with editable account number ──────────────────── */
+function AccountRow({ account, onUpdated, setErr, setOk }) {
+  const [editing, setEditing] = useState(false);
+  const [current, setCurrent] = useState(account.account_number);
+  const [val, setVal] = useState(account.account_number);
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    setErr(''); setOk(''); setBusy(true);
+    try {
+      const r = await api.patch(`/admin/accounts/${account.id}/number`, null, { params: { new_number: val.trim() } });
+      setOk(r.data?.message || 'Account number updated.');
+      setCurrent(val.trim());
+      setEditing(false);
+      onUpdated?.();
+    } catch (e) {
+      setErr(e.response?.data?.detail || 'Update failed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg bg-white/5 px-3 py-2 text-sm">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-white/70 shrink-0">{account.account_type}</span>
+        {editing ? (
+          <input
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            className="flex-1 rounded border border-white/20 bg-black/30 px-2 py-1 text-xs text-white font-mono focus:outline-none focus:border-[#8fdb46]"
+            autoFocus
+          />
+        ) : (
+          <span className="text-white/70 font-mono text-xs flex-1 truncate text-center">{current}</span>
+        )}
+        <span className="font-semibold text-[#8fdb46] shrink-0">{fmt(account.balance)}</span>
+        {editing ? (
+          <div className="flex gap-1 shrink-0">
+            <button onClick={save} disabled={busy || !val.trim() || val === current}
+              className="text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-40">{busy ? '…' : 'Save'}</button>
+            <button onClick={() => { setEditing(false); setVal(current); }}
+              className="text-[10px] px-2 py-1 rounded bg-white/10 text-white/70 hover:bg-white/20">Cancel</button>
+          </div>
+        ) : (
+          <button onClick={() => setEditing(true)} className="text-[10px] px-2 py-1 rounded bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 shrink-0">Edit #</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─── User row actions modal ───────────────────────────────────── */
 function UserModal({ user, onClose, onRefresh }) {
   const [newPw, setNewPw] = useState('');
@@ -80,10 +132,7 @@ function UserModal({ user, onClose, onRefresh }) {
 
         <div className="space-y-2 mb-4">
           {user.accounts?.map((a) => (
-            <div key={a.id} className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2 text-sm">
-              <span className="text-white/70">{a.account_type} · {a.account_number}</span>
-              <span className="font-semibold text-[#8fdb46]">{fmt(a.balance)}</span>
-            </div>
+            <AccountRow key={a.id} account={a} onUpdated={onRefresh} setErr={setErr} setOk={setOk} />
           ))}
         </div>
 
